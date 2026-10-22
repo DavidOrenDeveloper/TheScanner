@@ -51,4 +51,21 @@ const qty=cQ>=0?r[cQ]:'',unit=cU>=0?cells[cU]:'',price=cP>=0?r[cP]:'';
 if(qty===''&&price===''&&d.length<80){ctx=d;}
 out.push({ref,text:d,ctx,qty,unit,price,sheet:sn,row:i+r0+1})})}
 return out}
-g.Core={norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+
+function autoSyn(items,syn){
+const W=new Map();for(const it of items)for(const w of norm(it.text).split(' '))if(w.length>=3&&!/[\d.\/-]/.test(w)&&!STOP.has(w))W.set(w,(W.get(w)||0)+1);
+const by=new Map();for(const[w,c]of W){if(c<2)continue;const k=stem(w);if(!by.has(k))by.set(k,[]);by.get(k).push(w)}
+const keys=[...by.keys()].filter(k=>k.length>=4),par={};const f=x=>par[x]===x?x:(par[x]=f(par[x]));keys.forEach(k=>par[k]=k);
+for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++)if(lev1(keys[i],keys[j]))par[f(keys[i])]=f(keys[j]);
+const cl=new Map();for(const k of keys){const r=f(k);if(!cl.has(r))cl.set(r,new Set());by.get(k).forEach(w=>cl.get(r).add(w))}
+const groups=[];for(const s of cl.values())if(s.size>=2)groups.push([...s]);
+const P=new Map();for(const it of items){const t=String(it.text);if(!/[\/()]/.test(t)||norm(t).split(' ').length>6)continue;const segs=t.split(/[\/()]| או /).map(norm).filter(x=>x.length>=2&&/^[\u05D0-\u05EA ]+$/.test(x)&&x.split(' ').length<=3);if(segs.length>=2&&segs.length<=4){const k=[...segs].sort().join('|');P.set(k,(P.get(k)||0)+1)}}
+for(const[k,c]of P)if(c>=2)groups.push(k.split('|'));
+const out=syn.map(g=>[...g]);let added=0;
+for(const g of groups){const ng=g.map(norm);const tgt=out.find(o=>o.map(norm).some(p=>ng.includes(p)));if(!tgt){out.push(g);added+=g.length;continue}const have=tgt.map(norm);for(const p of g)if(!have.includes(norm(p))){tgt.push(p);added++}}
+return{syn:out,added}}
+function topTerms(items,n){const B=new Map(),U=new Map();for(const it of items){const w=norm(it.text).split(' ').filter(x=>x.length>=2&&!STOP.has(x)&&!/\d/.test(x));w.forEach((x,i)=>{if(x.length>=4)U.set(x,(U.get(x)||0)+1);if(i&&w[i-1].length>=2){const b=w[i-1]+' '+x;B.set(b,(B.get(b)||0)+1)}})}
+const a=[...B].filter(([,c])=>c>=3).sort((x,y)=>y[1]-x[1]).slice(0,n).map(x=>x[0]),b=[...U].filter(([,c])=>c>=5).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);return[...new Set([...a,...b])].slice(0,n)}
+function related(res,q){const qs=new Set(norm(q).split(' ').map(stem)),C=new Map();for(const r of res.slice(0,25)){const seen=new Set();for(const w of norm(r.it.text).split(' ')){if(w.length<3||STOP.has(w)||/\d/.test(w)||qs.has(stem(w))||seen.has(w))continue;seen.add(w);C.set(w,(C.get(w)||0)+1)}}
+return[...C].filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0])}
+g.Core={norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
