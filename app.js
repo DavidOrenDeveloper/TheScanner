@@ -183,8 +183,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')do
 
 // ================= סמנטי מקומי =================
 const embReady=()=>EMB.size>0&&(!!window.__fakeEmbed||!!P().embOn);
+async function wasmUrl(){const r=await fetch('lib/ort-wasm-simd-threaded.asyncify.wasm.gz');if(!r.ok)throw Error('קובץ ההרצה לא נמצא (lib/ort-wasm-simd-threaded.asyncify.wasm.gz)');let b=new Uint8Array(await r.arrayBuffer());if(b[0]===0x1f&&b[1]===0x8b)b=new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());return URL.createObjectURL(new Blob([b],{type:'application/wasm'}))}
 async function loadEmb(cb){if(EMBR)return EMBR;if(window.__fakeEmbed)return EMBR=window.__fakeEmbed;
-const T=await import('./lib/transformers.min.js');T.env.allowLocalModels=false;T.env.backends.onnx.wasm.wasmPaths={mjs:new URL('lib/ort-wasm-simd-threaded.asyncify.mjs',location.href).href,wasm:new URL('lib/ort-wasm-simd-threaded.asyncify.wasm',location.href).href};T.env.backends.onnx.wasm.numThreads=1;
+const T=await import('./lib/transformers.min.js');T.env.allowLocalModels=false;T.env.backends.onnx.wasm.wasmPaths={mjs:new URL('lib/ort-wasm-simd-threaded.asyncify.mjs',location.href).href,wasm:await wasmUrl()};T.env.backends.onnx.wasm.numThreads=1;
 const pipe=await T.pipeline('feature-extraction','Xenova/multilingual-e5-small',{dtype:'q8',device:'wasm',progress_callback:p=>cb&&p.status==='progress'&&cb('מוריד מודל: '+Math.round(p.progress||0)+'% '+(p.file||''))});
 return EMBR=async texts=>{const o=await pipe(texts,{pooling:'mean',normalize:true});return o.tolist().map(x=>Float32Array.from(x))}}
 const delEmb=async ids=>{const T=db.transaction('emb','readwrite'),s=T.objectStore('emb');ids.forEach(i=>{EMB.delete(i);s.delete(i)});await new Promise(r=>T.oncomplete=r)};
