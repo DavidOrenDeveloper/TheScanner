@@ -5,7 +5,7 @@ const stem=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);if(
 const toks=t=>new Set(norm(t).split(' ').filter(Boolean).map(stem));
 const TG=new Map();
 const tri=w=>{let s=TG.get(w);if(s)return s;s=new Set();const x=' '+w+' ';for(let i=0;i<x.length-2;i++)s.add(x.slice(i,i+3));TG.set(w,s);return s};
-const lev1=(a,b)=>{if(Math.abs(a.length-b.length)>1)return false;let i=0;while(i<a.length&&i<b.length&&a[i]===b[i])i++;if(a.length===b.length)return a.slice(i+1)===b.slice(i+1);const[l,sh]=a.length>b.length?[a,b]:[b,a];return l.slice(i+1)===sh.slice(i)};
+const lev1=(a,b)=>{if(Math.min(a.length,b.length)<5||Math.abs(a.length-b.length)>1)return false;let i=0;while(i<a.length&&i<b.length&&a[i]===b[i])i++;if(a.length===b.length)return a.slice(i+1)===b.slice(i+1);const[l,sh]=a.length>b.length?[a,b]:[b,a];return l.slice(i+1)===sh.slice(i)};
 const dice=(a,b)=>{let n=0;for(const x of a)if(b.has(x))n++;return 2*n/(a.size+b.size)};
 const STOP=new Set('של את כל מה על עם או אל לכל גם מצא אילו הסעיפים סעיפים הקשורים נדרש כולל אין יש הדרישות דרישות עבור ולכל מכל'.split(' '));
 const DEF_SYN=[
@@ -50,7 +50,7 @@ let cQ=col(/כמות/),cU=col(/^יח|יחידה/),cP=col(/מחיר/);
 if(cU<0)cU=stat.findIndex((s,k)=>k>cD&&s.n&&s.num===0&&s.sh>=s.n*.6);
 if(cQ<0)cQ=stat.findIndex((s,k)=>k>cD&&k!==cU&&s.n&&s.num>=s.n*.6);
 if(cP<0)cP=stat.findIndex((s,k)=>k>cQ&&cQ>=0&&k!==cU&&s.n&&s.num>=s.n*.6);
-const label=k=>H[k]||(k<cD?'מספור '+(k+1):k===cD?'תיאור':k===cU?'יחידה':k===cQ?'כמות':k===cP?'מחיר':'עמודה '+(k+1)),skip=k=>/מס"ד|מסד|^#$/.test(H[k]||'');
+const label=k=>H[k]||(k<cD?'מספור '+(k+1):k===cD?'תיאור':k===cU?'יחידה':k===cQ?'כמות':k===cP?'מחיר':XL.utils.encode_col(k)),skip=k=>/מס"ד|מסד|^#$/.test(H[k]||'');
 doc.sh=doc.sh||{};doc.sh[sn]={hdr:Array.from({length:W},(_,k)=>label(k)),r0,hi,W};
 let ctx='';
 rows.forEach((r,i)=>{if(i<=hi)return;const f=fm[i].map(x=>String(x).trim()),d=f[cD]||'';if(d.length<3)return;
