@@ -1,6 +1,7 @@
 (function(g){
 const norm=s=>String(s==null?'':s).replace(/[\u0591-\u05C7]/g,'').replace(/["'“”״׳’‘`]/g,'').toLowerCase().replace(/[^\u05D0-\u05EAa-z0-9\s.\/-]/g,' ').replace(/[.\-\/]+(?=\s|$)/g,'').replace(/(^|\s)[.\-\/]+/g,' ').replace(/\s+/g,' ').trim();
-const stem=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);if(a.length>3&&'הוכלבמש'.includes(a[0]))a=a.slice(1);return a};
+const FIN={ך:'כ',ם:'מ',ן:'נ',ף:'פ',ץ:'צ'};
+const stem=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);if(a.length>3&&'הוכלבמש'.includes(a[0]))a=a.slice(1);return a.replace(/[ךםןףץ]/g,x=>FIN[x])};
 const toks=t=>new Set(norm(t).split(' ').filter(Boolean).map(stem));
 const TG=new Map();
 const tri=w=>{let s=TG.get(w);if(s)return s;s=new Set();const x=' '+w+' ';for(let i=0;i<x.length-2;i++)s.add(x.slice(i,i+3));TG.set(w,s);return s};
@@ -85,14 +86,35 @@ const REQ=/חובה|על הקבלן|תקן|תי |בדיק|בדק|אישור|יא
 const TECH=/\d+(?:\.\d+)?\s?[x×*]\s?\d+(?:\.\d+)?|ip\s?\d{2}|\d+(?:\.\d+)?\s?(?:amp|אמפר|ממ|וולט|ואט|kw|kva|[avw])(?![a-zא-ת])/g;
 const tkey=t=>/^ip/.test(t)?'ip':/[x×*]/.test(t)?'dim':t.replace(/[\d.]/g,'');
 const tech=n=>{const o={};(n.match(TECH)||[]).forEach(t=>{t=t.replace(/\s/g,'');(o[tkey(t)]=o[tkey(t)]||new Set()).add(t)});return o};
-function compareOne(b,cands,syn,sem){
-const m=search(b.text,cands,syn,{max:20}).filter(r=>r.strength!=='חלשה').slice(0,3);if(sem)for(const s of sem.slice(0,3)){if(m.length>=4)break;if(!m.some(x=>x.it.id===s.it.id))m.push({it:s.it,sc:0,strength:'בינונית',why:['דמיון סמנטי מקומי'],hits:[]})}
-const fl=new Map(),add=(k,t,d)=>{if(fl.has(k)){if(k==='פער טכני'&&!fl.get(k).d.includes(d))fl.get(k).d+=' | '+d;return}fl.set(k,{k,t,d})},bt=tech(b.n);
-if(!m.length)add('אין התאמה במפרט','נושא לבירור','לא נמצא סעיף מפרט מתאים. ייתכן שהפריט אינו מפורט, או שהמונחים שונים (אפשר להוסיף למילון).');
+const GEN=new Set('אספקה ואספקה התקנת והתקנת התקנה להתקנת חיבור ממר ממ מטר מטרים כולל לרבות סוג עבור כמפורט לפי מושלם מוכן ביצוע עבודה עבודות מכל הכל דגם יצרן שווה ערך כמות'.split(' '));
+const core=n=>{const o=[];for(const w of n.split(' ')){if(w.length<3||STOP.has(w)||/\d/.test(w))continue;const s=stem(w);if(GEN.has(w)||GEN.has(s)||GEN.has(stem(s)))continue;if(!o.includes(s))o.push(s)}return o};
+const UNR=/(\d+(?:\.\d+)?)\s?(ממר|ממ|סמ|אמפר|ka|kva|kv|kw|va|וולט|מטר|a|v|w|אינץ)(?![א-תa-z])/g,DIM=/\d+\s?[x×*]\s?\d+(?:\.\d+)?/g;
+const attrs=n=>{const o={};let m;UNR.lastIndex=0;while(m=UNR.exec(n)){const k=m[2];(o[k]=o[k]||new Set()).add(String(parseFloat(m[1])))}(n.match(DIM)||[]).forEach(d=>{(o.dim=o.dim||new Set()).add(d.replace(/\s/g,'').replace(/[×*]/,'x'))});return o};
+const QG=[[/חד ?גיד/,/דו ?גיד/,/תלת ?גיד/,/רב ?גיד/],[/מתח גבוה/,/מתח בינוני/,/מתח נמוך/],[/נחושת/,/אלומיני/]];
+const quals=n=>QG.map(g=>{const s=new Set();g.forEach((r,i)=>{if(r.test(n))s.add(i)});return s});
+const qConf=(a,b)=>a.some((s,i)=>s.size&&b[i].size&&![...s].some(x=>b[i].has(x)));
+const nConf=(a,b)=>{const o=[];for(const k in a)if(b[k]&&![...a[k]].some(v=>b[k].has(v)))o.push(k==='dim'?'מידות/חתך':k+': '+[...a[k]].join('/')+' ↔ '+[...b[k]].join('/')+(k==='dim'?'':''));return o};
+function matchSpec(b,pool,syn,min,minC){
+const bc=core(b.n).slice(0,14),ba=attrs(b.n),bq=quals(b.n),out=[];if(!bc.length)return out;
+const alts=bc.map(t=>expand(t,syn));const head=0;
+for(const it of pool){const cov=bc.map((t,i)=>it.t.has(t)||(t.length>=3&&it.n.includes(t))||alts[i].some(p=>(' '+it.n).includes(' '+p)));
+if(!cov[head]&&!(bc.length>1&&cov[1]))continue;const c=cov.filter(Boolean).length,cn=it.cn||(it.cn=core(it.n)),den=Math.min(bc.length,Math.max(cn.length,1)),ratio=c/den;
+if(c<Math.min(minC||2,bc.length)||ratio<min)continue;
+if(qConf(bq,quals(it.n)))continue;const sa=attrs(it.n),cf=Object.entries(ba).flatMap(([k,v])=>{const s=sa[k];return s&&![...v].some(x=>s.has(x))?[k==='dim'?'חתך/מידות: '+[...v].join(',')+' ↔ '+[...s].join(','):k+': '+[...v].join(',')+' ↔ '+[...s].join(',')]:[]});
+if(cf.length&&ratio<.6)continue;
+let eq=0;for(const k in ba)if(sa[k]&&[...ba[k]].some(x=>sa[k].has(x)))eq++;
+out.push({it,sc:ratio*10+eq*3-cf.length,strength:ratio>=.75||(eq>=1&&ratio>=.6)?'חזקה':'בינונית',why:['התאמת מונחי הפריט: '+c+' מתוך '+den+(eq?' · מידות זהות':'')],hits:bc.filter((_,i)=>cov[i]).map(t=>({t,k:'x'})),gap:cf})}
+return out.sort((a,b)=>b.sc-a.sc)}
+function compareOne(b,cands,syn,sem,topic){
+const fl=new Map(),add=(k,t,d)=>{if(fl.has(k)){if(k==='פער טכני'&&!fl.get(k).d.includes(d))fl.get(k).d+=' | '+d;return}fl.set(k,{k,t,d})};
+const pool=[...cands];if(sem)sem.forEach(s=>{if(!pool.some(x=>x.id===s.it.id))pool.push(s.it)});
+const m=matchSpec(b,pool,syn,.5).slice(0,3);
+let tm=[];if(topic&&topic.length){const tp=pool.filter(it=>topic.some(t=>it.t.has(t))&&!m.some(x=>x.it.id===it.id));tm=matchSpec(b,tp,syn,0,1).slice(0,2)}
+if(!m.length)add('אין התאמה מדויקת במפרט','נושא לבירור','לא נמצא סעיף מפרט שמתאר את אותו פריט עם אותם מאפיינים. ייתכן שאינו מפורט, או שהמונחים שונים (אפשר להוסיף למילון).');
 for(const r of m){const n=r.it.n,rf=r.it.ref||('עמ׳ '+r.it.page);
 if(COST.test(n))add('כלול במחיר?','סיכון לעלות נוספת','בסעיף מפרט '+rf+' מופיעה לשון של "כלול / לא ישולם בנפרד". ודא שהתמחור כולל זאת.');
 if(REQ.test(n))add('דרישות / בדיקות / אישורים','הזדמנות לתיעוד','בסעיף מפרט '+rf+' יש דרישות לביצוע, בדיקות או אישורים. בדוק מה נדרש לתעד ולתמחר.');
-const st=tech(n);for(const k in bt)if(st[k]&&![...bt[k]].some(v=>st[k].has(v)))add('פער טכני','פער בין מסמכים','כתב כמויות: '+[...bt[k]].join(', ')+' · מפרט ('+rf+'): '+[...st[k]].join(', '))}
+r.gap.forEach(g=>add('פער טכני','פער בין מסמכים','כתב כמויות ↔ מפרט ('+rf+'): '+g))}
 if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבירור','לסעיף אין מחיר בכתב הכמויות.');
-return{b,m,flags:[...fl.values()]}}
-g.Core={norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+return{b,m,tm,flags:[...fl.values()]}}
+g.Core={norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
