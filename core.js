@@ -39,19 +39,24 @@ return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||300)}
 function parseXlsx(XL,buf,doc){
 const wb=XL.read(buf,{type:'array'}),out=[];doc.pages=wb.SheetNames.length;
 for(const sn of wb.SheetNames){const ws=wb.Sheets[sn];if(!ws['!ref'])continue;
-const r0=XL.utils.decode_range(ws['!ref']).s.r,rows=XL.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-const hi=rows.findIndex(r=>r.some(c=>/תיאור|פירוט/.test(c))&&r.some(c=>/כמות|יח/.test(c)));
-const H=hi>=0?rows[hi].map(String):[],col=re=>H.findIndex(c=>re.test(c));
-const cD=col(/תיאור|פירוט/),cQ=col(/כמות/),cU=col(/יח/),cP=col(/מחיר/);let cR=H.findIndex((c,i)=>i!==cD&&/סעיף|מס/.test(c));
+const r0=XL.utils.decode_range(ws['!ref']).s.r,rows=XL.utils.sheet_to_json(ws,{header:1,defval:'',raw:true}),fm=XL.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+const KW=/תיאור|פירוט|כמות|יחידה|יח|מחיר|סעיף|פרק|סה"כ|סהכ|מספר|הערות/;
+const hi=rows.slice(0,40).findIndex(r=>r.filter(x=>typeof x==='string'&&KW.test(x)).length>=3);
+const H=hi>=0?fm[hi].map(x=>String(x).trim()):[],col=re=>H.findIndex(x=>re.test(x)),W=Math.max(0,...rows.map(r=>r.length)),from=hi+1;
+const stat=Array.from({length:W},(_,k)=>{let len=0,num=0,sh=0,n=0;for(let i=from;i<Math.min(rows.length,from+300);i++){const v=rows[i][k];if(v===''||v==null)continue;n++;if(typeof v==='number')num++;else{const l=String(v).length;len+=l;if(l<=6)sh++}}return{len,num,sh,n}});
+let cD=col(/תיאור|פירוט/);if(cD<0){let b=0;stat.forEach((s,k)=>{if(s.len>b){b=s.len;cD=k}})}if(cD<0)continue;
+let cQ=col(/כמות/),cU=col(/^יח|יחידה/),cP=col(/מחיר/);
+if(cU<0)cU=stat.findIndex((s,k)=>k>cD&&s.n&&s.num===0&&s.sh>=s.n*.6);
+if(cQ<0)cQ=stat.findIndex((s,k)=>k>cD&&k!==cU&&s.n&&s.num>=s.n*.6);
+if(cP<0)cP=stat.findIndex((s,k)=>k>cQ&&cQ>=0&&k!==cU&&s.n&&s.num>=s.n*.6);
+const label=k=>H[k]||(k<cD?'מספור '+(k+1):k===cD?'תיאור':k===cU?'יחידה':k===cQ?'כמות':k===cP?'מחיר':'עמודה '+(k+1)),skip=k=>/מס"ד|מסד|^#$/.test(H[k]||'');
 let ctx='';
-rows.forEach((r,i)=>{if(i<=hi)return;const cells=r.map(c=>String(c).trim());
-let d=cD>=0?cells[cD]:cells.reduce((a,c)=>c.length>a.length&&isNaN(c)?c:a,'');if(!d||d.length<3)return;
-const ref=cR>=0?cells[cR]:(cells[0]!==d&&cells[0].length<14?cells[0]:'');
-const qty=cQ>=0?r[cQ]:'',unit=cU>=0?cells[cU]:'',price=cP>=0?r[cP]:'';
-if(qty===''&&price===''&&d.length<80){ctx=d;}
-out.push({ref,text:d,ctx,qty,unit,price,sheet:sn,row:i+r0+1,fields:r.map((c,k)=>[H[k]||('עמודה '+(k+1)),c]).filter(([,c])=>String(c).trim()!=='')})})}
+rows.forEach((r,i)=>{if(i<=hi)return;const f=fm[i].map(x=>String(x).trim()),d=f[cD]||'';if(d.length<3)return;
+const refs=[];for(let k=0;k<cD;k++){if(skip(k))continue;if(f[k]&&f[k].length<=14)refs.push(f[k])}const ref=refs.join('.');
+const qty=cQ>=0?r[cQ]:'',unit=cU>=0?f[cU]:'',price=cP>=0?r[cP]:'';
+if((qty===''||qty==null)&&(price===''||price==null)&&d.length<120)ctx=(ref?ref+' ':'')+d;
+out.push({ref,text:d,ctx,qty,unit,price,sheet:sn,row:i+r0+1,fields:f.map((x,k)=>[label(k),x]).filter(([,x])=>x!=='')})})}
 return out}
-
 function autoSyn(items,syn){
 const W=new Map();for(const it of items)for(const w of norm(it.text).split(' '))if(w.length>=3&&!/[\d.\/-]/.test(w)&&!STOP.has(w))W.set(w,(W.get(w)||0)+1);
 const by=new Map();for(const[w,c]of W){if(c<2)continue;const k=stem(w);if(!by.has(k))by.set(k,[]);by.get(k).push(w)}
@@ -68,7 +73,6 @@ function topTerms(items,n){const B=new Map(),U=new Map();for(const it of items){
 const a=[...B].filter(([,c])=>c>=3).sort((x,y)=>y[1]-x[1]).slice(0,n).map(x=>x[0]),b=[...U].filter(([,c])=>c>=5).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);return[...new Set([...a,...b])].slice(0,n)}
 function related(res,q){const qs=new Set(norm(q).split(' ').map(stem)),C=new Map();for(const r of res.slice(0,25)){const seen=new Set();for(const w of norm(r.it.text).split(' ')){if(w.length<3||STOP.has(w)||/\d/.test(w)||qs.has(stem(w))||seen.has(w))continue;seen.add(w);C.set(w,(C.get(w)||0)+1)}}
 return[...C].filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0])}
-
 function highlight(raw,hits,mode){raw=String(raw);const out=[],re=/[\u05D0-\u05EA\w"'׳״]+(?:[.\-][\u05D0-\u05EA\w]+)*/g,sp=[];let m;
 while(m=re.exec(raw))sp.push({s:m.index,e:m.index+m[0].length,n:norm(m[0])});const mk=new Array(sp.length).fill(null);
 for(const h of [...(hits||[])].sort((a,b)=>(a.k==='f')-(b.k==='f'))){const pw=h.t.split(' ');for(let i=0;i+pw.length<=sp.length;i++){let ok=true;for(let j=0;j<pw.length;j++){const n=sp[i+j].n,p=pw[j];if(!n||!(n===p||stem(n)===stem(p)||stem(n)===p||(p.length>2&&n.includes(p))||(h.k==='f'&&lev1(stem(n),stem(p))))){ok=false;break}}if(ok)for(let j=0;j<pw.length;j++)mk[i+j]=mk[i+j]||h.k}}
@@ -81,8 +85,9 @@ const REQ=/חובה|על הקבלן|תקן|תי |בדיק|בדק|אישור|יא
 const TECH=/\d+(?:\.\d+)?\s?[x×*]\s?\d+(?:\.\d+)?|ip\s?\d{2}|\d+(?:\.\d+)?\s?(?:amp|אמפר|ממ|וולט|ואט|kw|kva|[avw])(?![a-zא-ת])/g;
 const tkey=t=>/^ip/.test(t)?'ip':/[x×*]/.test(t)?'dim':t.replace(/[\d.]/g,'');
 const tech=n=>{const o={};(n.match(TECH)||[]).forEach(t=>{t=t.replace(/\s/g,'');(o[tkey(t)]=o[tkey(t)]||new Set()).add(t)});return o};
-function compareOne(b,cands,syn){
-const m=search(b.text,cands,syn,{max:20}).filter(r=>r.strength!=='חלשה').slice(0,3),fl=new Map(),add=(k,t,d)=>{if(fl.has(k)){if(k==='פער טכני'&&!fl.get(k).d.includes(d))fl.get(k).d+=' | '+d;return}fl.set(k,{k,t,d})},bt=tech(b.n);
+function compareOne(b,cands,syn,sem){
+const m=search(b.text,cands,syn,{max:20}).filter(r=>r.strength!=='חלשה').slice(0,3);if(sem)for(const s of sem.slice(0,3)){if(m.length>=4)break;if(!m.some(x=>x.it.id===s.it.id))m.push({it:s.it,sc:0,strength:'בינונית',why:['דמיון סמנטי מקומי'],hits:[]})}
+const fl=new Map(),add=(k,t,d)=>{if(fl.has(k)){if(k==='פער טכני'&&!fl.get(k).d.includes(d))fl.get(k).d+=' | '+d;return}fl.set(k,{k,t,d})},bt=tech(b.n);
 if(!m.length)add('אין התאמה במפרט','נושא לבירור','לא נמצא סעיף מפרט מתאים. ייתכן שהפריט אינו מפורט, או שהמונחים שונים (אפשר להוסיף למילון).');
 for(const r of m){const n=r.it.n,rf=r.it.ref||('עמ׳ '+r.it.page);
 if(COST.test(n))add('כלול במחיר?','סיכון לעלות נוספת','בסעיף מפרט '+rf+' מופיעה לשון של "כלול / לא ישולם בנפרד". ודא שהתמחור כולל זאת.');
