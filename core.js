@@ -29,8 +29,8 @@ for(const x of qt){let tk;
 if(it.t.has(x.s)){sc+=3;hit++;why.add('התאמה מדויקת');hits.push({t:x.w,k:'x'})}
 else if(x.w.length>2&&it.n.includes(x.w)){sc+=2;hit++;why.add('המילה מופיעה כחלק ממילה אחרת');hits.push({t:x.w,k:'x'})}
 else if(x.w.length>2&&it.nc.includes(x.w)){sc+=1.5;hit++;why.add('מופיע בכותרת/בהקשר הסעיף')}
-else if(x.s.length>=3&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'})}
-else if(x.w.length>3){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.length)<=2){const d=dice(x.tg,tri(t));if(d>b){b=d;bt=t}}}if(b>=.55){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:bt,k:'f'})}}}
+else if(x.s.length>=5&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'})}
+else if(x.w.length>4){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.length)<=2){const d=dice(x.tg,tri(t));if(d>b){b=d;bt=t}}}if(b>=.55){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:bt,k:'f'})}}}
 const ns=' '+it.n+' ';
 for(const p of ex){if(ns.includes(' '+p)){sy+=2;why.add('מילה נרדפת: '+p);hits.push({t:p,k:'s'});if(sy>=6)break}}
 sc+=sy+hit/qt.length*2;if(!hit&&!sy)continue;
