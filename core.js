@@ -16,7 +16,9 @@ const DEF_SYN=[
 ['הארקה','השוואת פוטנציאלים','אלקטרודת הארקה','מוליך הארקה'],
 ['תאורת חירום','שלט יציאה','שלטי יציאה','גוף חירום','פנס חירום'],
 ['לוח חשמל','לוחות חשמל','לוח','מפסק אוטומטי','מאמ"ת','מא"ז']];
-const prep=it=>{it.n=norm((it.ref||'')+' '+it.text);it.nc=norm(it.ctx||'');it.t=toks(it.n);return it};
+const CONN=new Set('עבור עם כולל כוללת כוללים לרבות בתוך לפי בעל בעלת בעלי המכיל המכילה המכילים המיועד המיועדת שיבוצע שיבוצעו אשר כמפורט לצורך כגון המשמש המשמשת מחובר המחובר המחוברת הכולל הכוללת במסגרת בצמוד כשהוא כשהיא עי על מול מתוך'.split(' ').map(norm));
+const headOf=n=>{const w=n.split(' '),i=w.findIndex((x,k)=>k>=1&&CONN.has(x));return i>0?w.slice(0,i).join(' '):n};
+const prep=it=>{it.n=norm((it.ref||'')+' '+it.text);it.nc=norm(it.ctx||'');it.t=toks(it.n);if(it.kind==='boq'){it.hn=headOf(norm(it.text));it.ht=toks(it.hn)}else{it.hn=null;it.ht=null}return it};
 function expand(q,syn){const nq=' '+norm(q)+' ',out=new Set();for(const gr of syn){const ps=gr.map(norm).filter(Boolean);if(ps.some(p=>nq.includes(' '+p+' ')||nq.includes(' '+p)||(!p.includes(' ')&&nq.split(' ').some(w=>w.length>3&&lev1(stem(w),stem(p))))))ps.forEach(p=>out.add(p))}return[...out]}
 function search(q,items,syn,f={}){
 const words=norm(q).split(' ').filter(w=>w.length>1&&!STOP.has(w));if(!words.length)return[];
@@ -24,18 +26,18 @@ const ex=expand(q,syn).filter(p=>!words.includes(p));
 const qt=words.map(w=>({w,s:stem(w),tg:tri(w)})),res=[];
 for(const it of items){
 if(f.doc&&it.docId!==f.doc)continue;if(f.kind&&it.kind!==f.kind)continue;
-let sc=0,hit=0,sy=0;const why=new Set(),hits=[];
+let sc=0,hit=0,sy=0,hh=0;const why=new Set(),hits=[],UH=!!it.ht;
 for(const x of qt){let tk;
-if(it.t.has(x.s)){sc+=3;hit++;why.add('התאמה מדויקת');hits.push({t:x.w,k:'x'})}
-else if(x.w.length>2&&it.n.includes(x.w)){sc+=2;hit++;why.add('המילה מופיעה כחלק ממילה אחרת');hits.push({t:x.w,k:'x'})}
+if(it.t.has(x.s)){sc+=3;hit++;why.add('התאמה מדויקת');hits.push({t:x.w,k:'x'});if(UH&&it.ht.has(x.s))hh++}
+else if(x.w.length>2&&it.n.includes(x.w)){sc+=2;hit++;why.add('המילה מופיעה כחלק ממילה אחרת');hits.push({t:x.w,k:'x'});if(UH&&it.hn.includes(x.w))hh++}
 else if(x.w.length>2&&it.nc.includes(x.w)){sc+=1.5;hit++;why.add('מופיע בכותרת/בהקשר הסעיף')}
-else if(x.s.length>=5&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'})}
+else if(x.s.length>=5&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'});if(UH&&it.ht.has(tk))hh++}
 else if(x.w.length>4){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.length)<=2){const d=dice(x.tg,tri(t));if(d>b){b=d;bt=t}}}if(b>=.55){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:bt,k:'f'})}}}
 const ns=' '+it.n+' ';
-for(const p of ex){if(ns.includes(' '+p)){sy+=2;why.add('מילה נרדפת: '+p);hits.push({t:p,k:'s'});if(sy>=6)break}}
+for(const p of ex){if(ns.includes(' '+p)){sy+=2;why.add('מילה נרדפת: '+p);hits.push({t:p,k:'s'});if(UH&&(' '+it.hn+' ').includes(' '+p))hh++;if(sy>=6)break}}
 sc+=sy+hit/qt.length*2;if(!hit&&!sy)continue;
-const strength=hit===qt.length?'חזקה':(hit>=qt.length/2&&hit>0)||sy>=2?'בינונית':'חלשה';
-res.push({it,sc,strength,why:[...why],hits})}
+const ctxOnly=UH&&!hh;let strength=hit===qt.length?'חזקה':(hit>=qt.length/2&&hit>0)||sy>=2?'בינונית':'חלשה';if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אחרי "עבור / עם / כולל…") – הפריט עצמו הוא משהו אחר')}
+res.push({it,sc,strength,why:[...why],hits,ctxOnly})}
 return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||300)}
 function parseXlsx(XL,buf,doc){
 const wb=XL.read(buf,{type:'array'}),out=[];doc.pages=wb.SheetNames.length;
