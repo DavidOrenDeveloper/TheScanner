@@ -7,7 +7,7 @@ const putItems=a=>new Promise((ok,no)=>{const T=db.transaction('items','readwrit
 const putFile=o=>rq(st('files','readwrite').put(o)),getFile=id=>rq(st('files').get(id)),delFile=id=>rq(st('files','readwrite').delete(id));
 const clearItems=()=>rq(st('items','readwrite').clear());
 const delItems=id=>new Promise(ok=>{const T=db.transaction('items','readwrite');T.objectStore('items').openCursor().onsuccess=e=>{const c=e.target.result;if(c){if(c.value.docId===id)c.delete();c.continue()}};T.oncomplete=ok});
-const APPV='1.7.1';
+const APPV='1.7.2';
 const KEYS=['docs','folders','finds','trash','syn','prefs','cmp','fb'],DEFP={hl:true,vm:'cards',sort:'rel',chap:{},sem:false,embOn:false,ai:{model:'',consent:false,list:[]}};
 const EMB=new Map();let EMBR=null,EMBSTOP=false;let S={docs:[],folders:[],finds:[],trash:[],syn:Core.DEF_SYN,prefs:{...DEFP},cmp:{},fb:{}},ITEMS=[],tab='home',openF=null,res=[],Q='',FQ='',FD='',FK='',LF='',FSORT='manual',SEL=new Set(),SELMODE=false,CR=[],CF={flag:'',type:'',ch:'',only:true,n:60};
 const RF={str:{'חזקה':1,'בינונית':1,'חלשה':0},ch:'',unit:'',txt:'',price:'',strict:false,ctx:false,bld:new Set(),sub:'',type:''};
