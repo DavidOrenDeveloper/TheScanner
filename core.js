@@ -40,7 +40,9 @@ function search(q,items,syn,f={}){
 syn=mergeDef(syn);
 const exc=[],phr=[];q=String(q).replace(/(^|\s)-(\S+)/g,(m,a,w)=>{exc.push(norm(w));return a}).replace(/(^|\s)"([^"]+)"(?=\s|$)/g,(m,a,p)=>{phr.push(norm(p));return a+p});
 const TQ=norm(q).split(' ').filter(Boolean),ci=TQ.findIndex((x,k)=>k>=1&&CONN.has(x)),headT=ci>0?TQ.slice(0,ci):TQ,qualT=ci>0?TQ.slice(ci+1):[];
-const words=norm(q).split(' ').filter(w=>w.length>1&&!STOP.has(w));if(!words.length)return[];
+let words=norm(q).split(' ').filter(w=>w.length>1&&!STOP.has(w));if(!words.length)return[];
+const isNum=w=>/^\d+(?:[.,]\d+)?$/.test(w);let nums=words.filter(isNum);if(nums.length&&nums.length<words.length)words=words.filter(w=>!isNum(w));else nums=[];
+const numRe=nums.map(n=>new RegExp('(^|[^\\d.,])'+n.replace(/[.,]/g,'[.,]')+'(?!\\d|[.,]\\d)'));
 const isQ=w=>ci>0&&qualT.includes(w)&&!headT.includes(w);
 const exA=expand(q,syn).filter(p=>!words.includes(p)),exH=ci>0?expand(headT.join(' '),syn).filter(p=>!words.includes(p)):exA,ex=[...new Set([...exH,...exA])];
 const cg=concepts(q,syn);
@@ -59,13 +61,17 @@ else if(x.w.length>5){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.l
 else got=false;
 mh[xi]=got});
 const ns=' '+it.n+' ';
+let numHit=null;if(nums.length){numHit=numRe.every(r=>r.test(it.n))}
 if(ci>0){const hw=qt.map((x,i)=>[x,i]).filter(([x])=>!x.q);if(hw.length&&!(hw.every(([,i])=>mh[i])||exH.some(p=>hasP(ns,p))))continue}
 for(const p of ex){if(hasP(ns,p)){sy+=2;why.add('מילה נרדפת: '+p);hits.push({t:p,k:'s'});if(UH&&hasP(' '+it.hn+' ',p))hh++;if(sy>=6)break}}
+if(numHit){sc+=8;nums.forEach(n=>hits.push({t:n,k:'n'}));why.add('המידה '+nums.join(', ')+' תואמת')}
 const lit=hit;let cov=0;for(const c of cg)if(c.members.some(m=>hasPh(tl,m)))cov+=c.core.length;if(cov&&hit<qt.length){hit=Math.min(qt.length,Math.max(hit,cov));why.add('מושג שקול במילון (למשל שוחה = תא בקרה / תא בזק)')}
 sc+=sy+hit/qt.length*2;if(!hit&&!sy)continue;
 if(ci>0&&qt.some((x,i)=>x.q&&mh[i])){sc+=1.5;why.add('מופיע גם ההקשר שציינת ('+qualT.join(' ')+')')}
-const ctxOnly=UH&&!hh&&!nh;let strength=lit===qt.length?'חזקה':hit===qt.length?'בינונית':(qt.length===1?sy>=2:(hit>0&&sy>=2))?'בינונית':'חלשה';if(UH&&!hh&&nh&&strength==='חזקה')strength='בינונית';if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אחרי "עבור / עם / כולל…") – הפריט עצמו הוא משהו אחר')}
-res.push({it,sc,strength,why:[...why],hits,ctxOnly})}
+const ctxOnly=UH&&!hh&&!nh;let strength=lit===qt.length?'חזקה':hit===qt.length?'בינונית':(qt.length===1?sy>=2:(hit>0&&sy>=2))?'בינונית':'חלשה';if(UH&&!hh&&nh&&strength==='חזקה')strength='בינונית';if(numHit&&strength==='בינונית'&&hit>=qt.length)strength='חזקה';
+if(numHit===false){sc*=.55;why.add('אותו פריט אבל ללא המידה '+nums.join(', '));if(strength==='חזקה')strength='בינונית'}
+if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אחרי "עבור / עם / כולל…") – הפריט עצמו הוא משהו אחר')}
+res.push({it,sc,strength,why:[...why],hits,ctxOnly,num:numHit===null?null:numHit?1:0})}
 return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||3000)}
 function parseXlsx(XL,buf,doc){
 const wb=XL.read(buf,{type:'array'}),all=[],seen=new Set();doc.pages=wb.SheetNames.length;doc.dupSheets=[];
