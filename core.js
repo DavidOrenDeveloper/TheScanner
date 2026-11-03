@@ -30,12 +30,13 @@ const near=(tl,core,w)=>{if(core.length<2)return hasPh(tl,core);const pos=core.m
 const subTok=(tl,w,n)=>(/[a-z0-9]/.test(w)&&w.length>=3&&n.includes(w))||w.length>=3&&tl.some(t=>t.length<=w.length+3&&(t.startsWith(w)||(t.length<=w.length+2&&t.endsWith(w))));
 const SANC=new WeakMap(),MRG=new WeakMap();
 const fam=m=>norm(m).split(' ').map(stem).join(' ');
-const synSig=s=>s.length+':'+s.reduce((a,g)=>a+g.length+g.reduce((b,m)=>b+String(m).length,0),0);
+let TRUST=new Set();const setTrust=a=>{TRUST=new Set((a||[]).map(norm))};
+const synSig=s=>s.length+':'+TRUST.size+':'+s.reduce((a,g)=>a+g.length+g.reduce((b,m)=>b+String(m).length,0),0);
 function cleanSyn(syn){const sg=synSig(syn),e0=SANC.get(syn);if(e0&&e0.sg===sg)return e0.v;let c=[];for(const g of syn){const F=new Map();for(const m of g){if(!norm(m))continue;const k=fam(m);if(!F.has(k))F.set(k,[]);F.get(k).push(m)}
-const ks=[...F.keys()],bad=new Set();for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){const a=ks[i],b=ks[j];if(a.length>=4&&b.length>=4&&!a.includes(' ')&&!b.includes(' ')&&(lev1(a,b)||(Math.abs(a.length-b.length)<=2&&dice(tri(a),tri(b))>=.6))){bad.add(a);bad.add(b)}}
+const ks=[...F.keys()],bad=new Set();for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){const a=ks[i],b=ks[j];if(!F.get(a).some(m=>TRUST.has(norm(m)))&&!F.get(b).some(m=>TRUST.has(norm(m)))&&a.length>=4&&b.length>=4&&!a.includes(' ')&&!b.includes(' ')&&(lev1(a,b)||(Math.abs(a.length-b.length)<=2&&dice(tri(a),tri(b))>=.6))){bad.add(a);bad.add(b)}}
 const keep=ks.filter(k=>!bad.has(k)).flatMap(k=>F.get(k));if(new Set(keep.map(fam)).size>=2)c.push(keep)}SANC.set(syn,{sg,v:c});return c}
 function mergeDef(syn){const sg=synSig(syn),e0=MRG.get(syn);if(e0&&e0.sg===sg)return e0.v;const DN=DEF_SYN.map(d=>d.map(norm)),base=[];
-for(const g0 of cleanSyn(syn)){const g=[...g0],gn=g.map(norm),hit=DN.map((d,i)=>gn.some(m=>d.includes(m))?i:-1).filter(i=>i>=0),nf=new Set(g.map(fam)).size;
+for(const g0 of cleanSyn(syn)){const g=[...g0],gn=g.map(norm);if(gn.some(m=>TRUST.has(m))){base.push(g);continue}const hit=DN.map((d,i)=>gn.some(m=>d.includes(m))?i:-1).filter(i=>i>=0),nf=new Set(g.map(fam)).size;
 if(!hit.length){if(nf<=12)base.push(g);continue}
 if(hit.length===1&&nf<=DN[hit[0]].length+14)base.push(g)}
 for(const d of DEF_SYN){const dn=d.map(norm),tg=base.find(g=>g.some(m=>dn.includes(norm(m))));if(!tg){base.push([...d]);continue}const have=tg.map(norm);d.forEach((m,i)=>{if(!have.includes(dn[i]))tg.push(m)})}
@@ -168,4 +169,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
