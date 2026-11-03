@@ -30,15 +30,16 @@ const near=(tl,core,w)=>{if(core.length<2)return hasPh(tl,core);const pos=core.m
 const subTok=(tl,w,n)=>(/[a-z0-9]/.test(w)&&w.length>=3&&n.includes(w))||w.length>=3&&tl.some(t=>t.length<=w.length+3&&(t.startsWith(w)||(t.length<=w.length+2&&t.endsWith(w))));
 const SANC=new WeakMap(),MRG=new WeakMap();
 const fam=m=>norm(m).split(' ').map(stem).join(' ');
-function cleanSyn(syn){let c=SANC.get(syn);if(c)return c;c=[];for(const g of syn){const F=new Map();for(const m of g){if(!norm(m))continue;const k=fam(m);if(!F.has(k))F.set(k,[]);F.get(k).push(m)}
+const synSig=s=>s.length+':'+s.reduce((a,g)=>a+g.length+g.reduce((b,m)=>b+String(m).length,0),0);
+function cleanSyn(syn){const sg=synSig(syn),e0=SANC.get(syn);if(e0&&e0.sg===sg)return e0.v;let c=[];for(const g of syn){const F=new Map();for(const m of g){if(!norm(m))continue;const k=fam(m);if(!F.has(k))F.set(k,[]);F.get(k).push(m)}
 const ks=[...F.keys()],bad=new Set();for(let i=0;i<ks.length;i++)for(let j=i+1;j<ks.length;j++){const a=ks[i],b=ks[j];if(a.length>=4&&b.length>=4&&!a.includes(' ')&&!b.includes(' ')&&(lev1(a,b)||(Math.abs(a.length-b.length)<=2&&dice(tri(a),tri(b))>=.6))){bad.add(a);bad.add(b)}}
-const keep=ks.filter(k=>!bad.has(k)).flatMap(k=>F.get(k));if(new Set(keep.map(fam)).size>=2)c.push(keep)}SANC.set(syn,c);return c}
-function mergeDef(syn){if(MRG.has(syn))return MRG.get(syn);const DN=DEF_SYN.map(d=>d.map(norm)),base=[];
+const keep=ks.filter(k=>!bad.has(k)).flatMap(k=>F.get(k));if(new Set(keep.map(fam)).size>=2)c.push(keep)}SANC.set(syn,{sg,v:c});return c}
+function mergeDef(syn){const sg=synSig(syn),e0=MRG.get(syn);if(e0&&e0.sg===sg)return e0.v;const DN=DEF_SYN.map(d=>d.map(norm)),base=[];
 for(const g0 of cleanSyn(syn)){const g=[...g0],gn=g.map(norm),hit=DN.map((d,i)=>gn.some(m=>d.includes(m))?i:-1).filter(i=>i>=0),nf=new Set(g.map(fam)).size;
-if(!hit.length){if(nf<=8)base.push(g);continue}
-if(hit.length===1&&nf<=DN[hit[0]].length+4)base.push(g)}
+if(!hit.length){if(nf<=12)base.push(g);continue}
+if(hit.length===1&&nf<=DN[hit[0]].length+14)base.push(g)}
 for(const d of DEF_SYN){const dn=d.map(norm),tg=base.find(g=>g.some(m=>dn.includes(norm(m))));if(!tg){base.push([...d]);continue}const have=tg.map(norm);d.forEach((m,i)=>{if(!have.includes(dn[i]))tg.push(m)})}
-MRG.set(syn,base);MRG.set(base,base);return base}
+MRG.set(syn,{sg,v:base});MRG.set(base,{sg:synSig(base),v:base});return base}
 function concepts(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=[];for(const gr of syn){const ps=gr.map(norm).filter(Boolean).map(p=>p.split(' '));const m=ps.find(p=>p.length>=2&&hasPh(qt,p));if(m)out.push({core:m,members:ps})}return out}
 function expand(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=new Set();for(const gr of syn){const ps=gr.map(norm).filter(Boolean);if(ps.some(p=>hasPh(qt,p.split(' '))))ps.forEach(p=>out.add(p))}return[...out]}
 function search(q,items,syn,f={}){
