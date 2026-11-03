@@ -1,0 +1,8 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>עדכון האפליקציה</title></head>
+<body style="font-family:system-ui,Arial,sans-serif;padding:28px;max-width:520px;margin:auto;line-height:1.6">
+<h2>מעדכן את האפליקציה…</h2>
+<p id="m">מנקה רק את הקבצים השמורים של האפליקציה הזו. המסמכים, התיקים וההגדרות שלך נשארים, ואפליקציות אחרות באותו דומיין לא נפגעות.</p>
+<script>(async()=>{const m=document.getElementById('m');try{const sc=new URL('./',location.href).href;
+for(const r of await navigator.serviceWorker.getRegistrations())if(r.scope===sc)await r.unregister();
+for(const k of await caches.keys()){const c=await caches.open(k);if((await c.keys()).some(q=>q.url.startsWith(sc)))await caches.delete(k)}
+await Promise.all(['index.html','app.js','core.js','sw.js','manifest.json'].map(f=>fetch(f,{cache:'reload'}).catch(()=>0)));m.textContent='בוצע ✔ טוען את הגרסה החדשה…';setTimeout(()=>location.replace('./?v='+Date.now()),900)}catch(e){m.textContent='שגיאה: '+e.message}})()</script></body></html>
