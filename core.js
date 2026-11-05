@@ -1,5 +1,6 @@
 (function(g){
-const norm=s=>String(s==null?'':s).replace(/[\u0591-\u05C7]/g,'').replace(/["'“”״׳’‘`]/g,'').toLowerCase().replace(/[^\u05D0-\u05EAa-z0-9\s.\/-]/g,' ').replace(/[.\-\/]+(?=\s|$)/g,'').replace(/(^|\s)[.\-\/]+/g,' ').replace(/\s+/g,' ').trim();
+let SLR=/(?!)/g;const setSlash=v=>{SLR=v?/(\d)\s*\/\s*(?=\d)/g:/(?!)/g};
+const norm=s=>String(s==null?'':s).replace(/[\u0591-\u05C7]/g,'').replace(/["'“”״׳’‘`]/g,'').toLowerCase().replace(/(\d)\s*[x×*\\]\s*(?=\d)/g,'$1x').replace(SLR,'$1x').replace(/(^|\s)(?:מממר|mm2|ממ2)(?=\s|$)/g,'$1ממר').replace(/[^\u05D0-\u05EAa-z0-9\s.\/-]/g,' ').replace(/[.\-\/]+(?=\s|$)/g,'').replace(/(^|\s)[.\-\/]+/g,' ').replace(/\s+/g,' ').trim();
 const FIN={ך:'כ',ם:'מ',ן:'נ',ף:'פ',ץ:'צ'};
 const stem=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);if(a.length>3&&'הוכלבמש'.includes(a[0]))a=a.slice(1);return a.replace(/[ךםןףץ]/g,x=>FIN[x])};
 const sv=w=>{const o=new Set();let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);const b=[a];if(a.length>3&&'הוכלבמש'.includes(a[0]))b.push(a.slice(1));for(const x of b){o.add(x);if(x.length>=4&&x.endsWith('ה'))o.add(x.slice(0,-1));if(x.length>=5&&x.endsWith('ת'))o.add(x.slice(0,-1));if(x.length>=3&&x.endsWith('י'))o.add(x.slice(0,-1))}for(const x of [...o]){const s2=x[0]+x.slice(1).replace(/[וי]/g,'');if(s2.length>=3&&s2!==x)o.add(s2)}return[...o].map(z=>z.replace(/[ךםןףץ]/g,y=>FIN[y]))};
@@ -10,14 +11,14 @@ const lev1=(a,b)=>{if(Math.min(a.length,b.length)<5||Math.abs(a.length-b.length)
 const dice=(a,b)=>{let n=0;for(const x of a)if(b.has(x))n++;return 2*n/(a.size+b.size)};
 const STOP=new Set('של את כל מה על עם או אל לכל גם מצא אילו הסעיפים סעיפים הקשורים נדרש כולל אין יש הדרישות דרישות עבור ולכל מכל'.split(' '));
 const DEF_SYN=[
-['שקע','שקעים','תקע','תקעים','בית תקע','בתי תקע','ח"ק','ח\'ק','חק'],
+['שקע','שקעים','תקע','תקעים','בית תקע','בתי תקע','ח"ק','ח\'ק','חק','חיבור קירי'],
 ['נקודת מאור','נקודות מאור','גוף תאורה','גופי תאורה','תאורה','גוף מאור'],
 ['שוחת חשמל','שוחות חשמל','שוחה','שוחות','שוחת','שוחת תקשורת','שוחת בזק','שוחת ביקורת','שוחות ביקורת','תא בקרה','תא ביקורת','תא בזק','תא תקשורת','תיבת ביקורת','תא מעבר'],
 ['תעלה','תעלות','סולם כבלים','מגש כבלים','תעלת כבלים'],
 ['הארקה','השוואת פוטנציאלים','אלקטרודת הארקה','מוליך הארקה'],
 ['תאורת חירום','שלט יציאה','שלטי יציאה','גוף חירום','פנס חירום'],
 ['לוח חשמל','לוחות חשמל','לוח','לוחות'],
-['מפסק אוטומטי','מאמ"ת','מא"ז','מפסק זעיר']];
+['מפסק אוטומטי','מפסק אוטומטי זעיר','מא"ז','מפסק זעיר'],['מפסק אוטומטי מגנטי תרמי','מפסק אוטומטי מגנטו תרמי','מאמ"ת','מגנטו תרמי'],['על הטיח','עה"ט'],['שוה ערך','שווה ערך','שו"ע','שוו"ע']];
 const CONN=new Set('עבור עם כולל כוללת כוללים לרבות בתוך לפי בעל בעלת בעלי המכיל המכילה המכילים המיועד המיועדת שיבוצע שיבוצעו אשר כמפורט לצורך כגון המשמש המשמשת מחובר המחובר המחוברת הכולל הכוללת במסגרת בצמוד כשהוא כשהיא עי על מול מתוך'.split(' ').map(norm));
 const headOf=n=>{const w=n.split(' '),i=w.findIndex((x,k)=>k>=1&&CONN.has(x));return i>0?w.slice(0,i).join(' '):n};
 const hasP=(ns,p)=>p.length<=3?ns.includes(' '+p+' '):ns.includes(' '+p);
@@ -156,7 +157,7 @@ function topTerms(items,n){const B=new Map(),U=new Map();for(const it of items){
 const a=[...B].filter(([,c])=>c>=3).sort((x,y)=>y[1]-x[1]).slice(0,n).map(x=>x[0]),b=[...U].filter(([,c])=>c>=5).sort((x,y)=>y[1]-x[1]).map(x=>x[0]);return[...new Set([...a,...b])].slice(0,n)}
 function related(res,q){const qs=new Set(norm(q).split(' ').map(stem)),C=new Map();for(const r of res.slice(0,25)){const seen=new Set();for(const w of norm(r.it.text).split(' ')){if(w.length<3||STOP.has(w)||/\d/.test(w)||qs.has(stem(w))||seen.has(w))continue;seen.add(w);C.set(w,(C.get(w)||0)+1)}}
 return[...C].filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0])}
-function highlight(raw,hits,mode){raw=String(raw);const out=[],re=/[\u05D0-\u05EA\w"'׳״]+(?:[.\-][\u05D0-\u05EA\w]+)*/g,sp=[];let m;
+function highlight(raw,hits,mode){raw=String(raw);const out=[],re=/[\u05D0-\u05EA\w"'׳״]+(?:[.\-*×\\][\u05D0-\u05EA\w]+)*/g,sp=[];let m;
 while(m=re.exec(raw))sp.push({s:m.index,e:m.index+m[0].length,n:norm(m[0])});const mk=new Array(sp.length).fill(null);
 for(const h of [...(hits||[])].sort((a,b)=>(a.k==='f')-(b.k==='f'))){const pw=h.t.split(' ');for(let i=0;i+pw.length<=sp.length;i++){let ok=true;for(let j=0;j<pw.length;j++){const n=sp[i+j].n,p=pw[j];if(!n||!(n===p||stem(n)===stem(p)||stem(n)===p||sv(n).some(z=>sv(p).includes(z))||(p.length>2&&n.includes(p))||(/^\d+$/.test(p)&&new RegExp('(^|\\D)'+p+'(?!\\d)').test(n))||(h.k!=='f'&&tokEq(n,p))||(h.k==='f'&&lev1(stem(n),stem(p))))){ok=false;break}}if(ok)for(let j=0;j<pw.length;j++)mk[i+j]=mk[i+j]||h.k}}
 const E=x=>mode==='text'?x:x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));let pos=0;
@@ -203,4 +204,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,setSlash,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
