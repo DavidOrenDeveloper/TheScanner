@@ -80,6 +80,24 @@ if(numHit===false){sc*=.55;why.add('אותו פריט אבל ללא המידה '
 if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אחרי "עבור / עם / כולל…") – הפריט עצמו הוא משהו אחר')}
 res.push({it,sc,strength,why:[...why],hits,ctxOnly,num:numHit===null?null:numHit?1:0})}
 return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||3000)}
+
+function searchAdv(q,items,syn,f={}){
+syn=mergeDef(syn);const mode=f.mode||'all',U=[],X=[];
+String(q).replace(/"([^"]+)"|(\S+)/g,(m,p,w)=>{if(p){const n=norm(p);n&&U.push({ph:n.split(' ')})}else if(w[0]==='-'&&w.length>1){const n=norm(w.slice(1));n&&X.push(n)}else{const n=norm(w);n&&n.split(' ').forEach(z=>z&&U.push({ph:[z]}))}return m});
+if(!U.length)return[];
+const isN=z=>/^\d+(?:[.,]\d+)?$/.test(z),tm=(t,z)=>isN(z)?new RegExp('(^|[^\\d.,])'+z.replace(/[.,]/g,'[.,]')+'(?!\\d|[.,]\\d)').test(t):(t===z||tokEq(t,z)||(z.length>=3&&t.length<=z.length+3&&t.startsWith(z))),
+ph=(tl,p)=>{for(let i=0;i+p.length<=tl.length;i++)if(p.every((z,j)=>tm(tl[i+j],z)))return true;return false};
+const sets=mode==='phrase'?[{ph:U.flatMap(u=>u.ph)}]:U;
+sets.forEach(u=>{const k=u.ph.join(' ');u.alts=[u.ph];if(f.syn)expand(k,syn).forEach(s=>{if(s!==k)u.alts.push(s.split(' '))})});
+const ki=it=>+String(it.id).split('_').pop()||0,res=[];
+for(const it of items){if(f.doc&&it.docId!==f.doc)continue;if(f.kind&&it.kind!==f.kind)continue;
+const tl=it.tl||(it.tl=it.n.split(/[\s\/\-]+/).filter(Boolean));
+if(X.some(z=>tl.some(t=>tm(t,z))))continue;
+const hits=[];let got=0;
+for(const u of sets){const a=u.alts.find(x=>ph(tl,x));if(a){got++;hits.push({t:a.join(' '),k:a===u.ph?'x':'s'})}}
+if(mode==='any'?!got:got<sets.length)continue;
+res.push({it,sc:got/sets.length*10,strength:got===sets.length?'חזקה':'בינונית',why:[mode==='phrase'?'הביטוי מופיע צמוד, באותו סדר':mode==='any'?'נמצאו '+got+' מתוך '+sets.length+' מילים':'כל המילים מופיעות'],hits,ctxOnly:false,num:null})}
+return res.sort((a,b)=>b.sc-a.sc||ki(a.it)-ki(b.it)).slice(0,f.max||3000)}
 function parseXlsx(XL,buf,doc){
 const wb=XL.read(buf,{type:'array'}),all=[],seen=new Set();doc.pages=wb.SheetNames.length;doc.dupSheets=[];
 for(const sn of wb.SheetNames){const ws=wb.Sheets[sn];if(!ws['!ref'])continue;const out=[];
@@ -124,7 +142,7 @@ function related(res,q){const qs=new Set(norm(q).split(' ').map(stem)),C=new Map
 return[...C].filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0])}
 function highlight(raw,hits,mode){raw=String(raw);const out=[],re=/[\u05D0-\u05EA\w"'׳״]+(?:[.\-][\u05D0-\u05EA\w]+)*/g,sp=[];let m;
 while(m=re.exec(raw))sp.push({s:m.index,e:m.index+m[0].length,n:norm(m[0])});const mk=new Array(sp.length).fill(null);
-for(const h of [...(hits||[])].sort((a,b)=>(a.k==='f')-(b.k==='f'))){const pw=h.t.split(' ');for(let i=0;i+pw.length<=sp.length;i++){let ok=true;for(let j=0;j<pw.length;j++){const n=sp[i+j].n,p=pw[j];if(!n||!(n===p||stem(n)===stem(p)||stem(n)===p||sv(n).some(z=>sv(p).includes(z))||(p.length>2&&n.includes(p))||(h.k==='f'&&lev1(stem(n),stem(p))))){ok=false;break}}if(ok)for(let j=0;j<pw.length;j++)mk[i+j]=mk[i+j]||h.k}}
+for(const h of [...(hits||[])].sort((a,b)=>(a.k==='f')-(b.k==='f'))){const pw=h.t.split(' ');for(let i=0;i+pw.length<=sp.length;i++){let ok=true;for(let j=0;j<pw.length;j++){const n=sp[i+j].n,p=pw[j];if(!n||!(n===p||stem(n)===stem(p)||stem(n)===p||sv(n).some(z=>sv(p).includes(z))||(p.length>2&&n.includes(p))||(/^\d+$/.test(p)&&new RegExp('(^|\\D)'+p+'(?!\\d)').test(n))||(h.k!=='f'&&tokEq(n,p))||(h.k==='f'&&lev1(stem(n),stem(p))))){ok=false;break}}if(ok)for(let j=0;j<pw.length;j++)mk[i+j]=mk[i+j]||h.k}}
 const E=x=>mode==='text'?x:x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));let pos=0;
 for(let i=0;i<sp.length;i++){if(!mk[i])continue;let j=i;while(j+1<sp.length&&mk[j+1]===mk[i]&&/^\s*$/.test(raw.slice(sp[j].e,sp[j+1].s)))j++;
 out.push(E(raw.slice(pos,sp[i].s)));const seg=E(raw.slice(sp[i].s,sp[j].e));out.push(mode==='text'?'【'+seg+'】':'<mark class="m-'+mk[i]+'">'+seg+'</mark>');pos=sp[j].e;i=j}
@@ -169,4 +187,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
