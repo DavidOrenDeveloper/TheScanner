@@ -81,6 +81,22 @@ if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אח
 res.push({it,sc,strength,why:[...why],hits,ctxOnly,num:numHit===null?null:numHit?1:0})}
 return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||3000)}
 
+
+const DITTO=/(^|\s)(?:ככנ|כנ)["״”'׳]*ל?[,.]?(?=\s|$)/;
+const mergeInh=(b,r)=>{const bt=b.split(/\s+/).filter(Boolean),rt=r.split(/\s+/).filter(Boolean),cl=w=>w.replace(/["״”'׳.,:;()]/g,'');if(!rt.length)return b;
+for(const w of rt){const x=cl(w);if(x.length<3||/\d/.test(x))continue;const i=bt.findIndex(y=>cl(y)===x);if(i>0)return bt.slice(0,i).join(' ')+' '+r}
+if(/\d/.test(r)){let j=-1;for(let i=bt.length-1;i>=0;i--)if(/\d/.test(bt[i])){j=i;break}if(j>0){while(j>0&&/\d/.test(bt[j-1]))j--;return bt.slice(0,j).join(' ')+' '+r}}
+return b+' '+r};
+function inherit(items,on=true){const by={};items.forEach(it=>{if(it.kind==='boq')(by[it.docId]=by[it.docId]||[]).push(it)});let n=0;
+const sec=r=>String(r||'').split('.').slice(0,3).join('.'),real=it=>!it.head&&!it.note&&/^\d+(\.\d+){3,}/.test(it.ref||''),k=it=>+String(it.id).split('_').pop()||0;
+for(const L of Object.values(by)){L.sort((a,b)=>k(a)-k(b));let base=null;
+for(const it of L){delete it.inh;const t=String(it.text||''),m=real(it)&&DITTO.exec(t);
+if(!m){if(real(it))base=it;continue}
+if(!on||!base||sec(base.ref)!==sec(it.ref))continue;
+const rest=t.slice(m.index+m[0].length).replace(/^[\s,.:–-]*(?:אך|אף|אלא|אבל)(?=\s|$)/,'').trim(),bt=String(base.text||'');
+const eff=mergeInh(bt,rest);it.inh={ref:base.ref,text:bt,eff};
+it.n=norm((it.ref||'')+' '+eff);it.t=toks(it.n);it.tl=it.n.split(/[\s\/\-]+/).filter(Boolean);it.hn=headOf(norm(eff));it.ht=toks(it.hn);n++}}
+return n}
 function searchAdv(q,items,syn,f={}){
 syn=mergeDef(syn);const mode=f.mode||'all',U=[],X=[];
 String(q).replace(/"([^"]+)"|(\S+)/g,(m,p,w)=>{if(p){const n=norm(p);n&&U.push({ph:n.split(' ')})}else if(w[0]==='-'&&w.length>1){const n=norm(w.slice(1));n&&X.push(n)}else{const n=norm(w);n&&n.split(' ').forEach(z=>z&&U.push({ph:[z]}))}return m});
@@ -187,4 +203,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
