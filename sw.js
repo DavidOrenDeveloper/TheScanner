@@ -1,8 +1,8 @@
-const V='v1.9.1',F=['./','index.html','app.js','core.js','manifest.json','icon.svg','lib/xlsx.full.min.js','lib/pdf.min.js','lib/pdf.worker.min.js'];
+const V='v2.0.0',F=['./', 'manifest.json', 'assets/icons/icon.svg', 'js/vendor/xlsx.full.min.js', 'js/vendor/pdf.min.js', 'js/vendor/pdf.worker.min.js', 'index.html', 'css/style.css', 'js/core.js', 'js/app/01-state.js', 'js/app/02-dialogs.js', 'js/app/03-parsing.js', 'js/app/04-results.js', 'js/app/05-compare.js', 'js/app/06-views.js', 'js/app/07-selection.js', 'js/app/08-export.js', 'js/app/09-events.js', 'js/app/10-semantic.js', 'js/app/11-gemini.js', 'js/app/12-search.js', 'js/app/13-update.js', 'js/app/14-original-view.js', 'js/app/15-fab-resize.js', 'js/app/16-search-settings.js', 'js/app/17-grouping-spec.js', 'js/app/18-source-viewer.js', 'js/app/19-pinned-header.js', 'js/app/99-boot.js'];
 const SC=self.registration.scope,put=(r,res)=>{if(res&&res.ok&&new URL(r.url).origin===location.origin){const cp=res.clone();caches.open(V).then(c=>c.put(r,cp))}return res};
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(F.map(u=>new Request(u,{cache:'reload'})))))});
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys()){if(k===V)continue;const c=await caches.open(k);if((await c.keys()).some(r=>r.url.startsWith(SC)))await caches.delete(k)}await self.clients.claim()})()));
 self.addEventListener('message',e=>{if(e.data==='skip')self.skipWaiting()});
 self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;
-const fresh=!/\/lib\//.test(u.pathname)&&(r.mode==='navigate'||/(\/|\.html|\.js|\.json)$/.test(u.pathname));
+const fresh=!/\/js\/vendor\//.test(u.pathname)&&(r.mode==='navigate'||/(\/|\.html|\.js|\.json)$/.test(u.pathname));
 e.respondWith(fresh?fetch(r,{cache:'no-cache'}).then(res=>put(r,res)).catch(()=>caches.match(r,{ignoreSearch:true}).then(x=>x||caches.match('./',{ignoreSearch:true}))):caches.match(r,{ignoreSearch:true}).then(x=>x||fetch(r).then(res=>put(r,res))))});

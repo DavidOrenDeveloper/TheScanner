@@ -1,0 +1,22 @@
+// מצב, אחסון מקומי (IndexedDB) ופונקציות עזר
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+let db;const open=()=>new Promise((ok,no)=>{const r=indexedDB.open('boqapp',3);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('items'))d.createObjectStore('items',{keyPath:'id'});if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');if(!d.objectStoreNames.contains('emb'))d.createObjectStore('emb',{keyPath:'id'});if(!d.objectStoreNames.contains('files'))d.createObjectStore('files',{keyPath:'id'})};r.onsuccess=()=>{db=r.result;ok()};r.onerror=()=>no(r.error)});
+const rq=r=>new Promise((a,b)=>{r.onsuccess=()=>a(r.result);r.onerror=()=>b(r.error)}),st=(n,m='readonly')=>db.transaction(n,m).objectStore(n);
+const kvGet=async(k,d)=>{const v=await rq(st('kv').get(k));return v==null?d:v},kvSet=(k,v)=>rq(st('kv','readwrite').put(v,k));
+const strip=({n,nc,t,...c})=>c;
+const putItems=a=>new Promise((ok,no)=>{const T=db.transaction('items','readwrite'),s=T.objectStore('items');a.forEach(i=>s.put(strip(i)));T.oncomplete=ok;T.onerror=()=>no(T.error)});
+const putFile=o=>rq(st('files','readwrite').put(o)),getFile=id=>rq(st('files').get(id)),delFile=id=>rq(st('files','readwrite').delete(id));
+const clearItems=()=>rq(st('items','readwrite').clear());
+const delItems=id=>new Promise(ok=>{const T=db.transaction('items','readwrite');T.objectStore('items').openCursor().onsuccess=e=>{const c=e.target.result;if(c){if(c.value.docId===id)c.delete();c.continue()}};T.oncomplete=ok});
+const APPV='2.0.0',APPFILES=["index.html", "css/style.css", "js/core.js", "js/app/01-state.js", "js/app/02-dialogs.js", "js/app/03-parsing.js", "js/app/04-results.js", "js/app/05-compare.js", "js/app/06-views.js", "js/app/07-selection.js", "js/app/08-export.js", "js/app/09-events.js", "js/app/10-semantic.js", "js/app/11-gemini.js", "js/app/12-search.js", "js/app/13-update.js", "js/app/14-original-view.js", "js/app/15-fab-resize.js", "js/app/16-search-settings.js", "js/app/17-grouping-spec.js", "js/app/18-source-viewer.js", "js/app/19-pinned-header.js", "js/app/99-boot.js", "sw.js", "manifest.json"];
+const KEYS=['docs','folders','finds','trash','syn','prefs','cmp','fb'],DEFP={hl:true,vm:'cards',sort:'rel',chap:{'01':'מרתפים','02':'טיגארט','03':'משרדים','04':'סיעודי','05':'דיור מוגן','06':'חיבור תשתיות'},sm:'smart',asyn:false,hlk:'both',mkc:'#a6f0b8',sem:false,embOn:false,ai:{model:'',consent:false,list:[]}};
+const EMB=new Map();let EMBR=null,EMBSTOP=false;let S={docs:[],folders:[],finds:[],trash:[],syn:Core.DEF_SYN,prefs:{...DEFP},cmp:{},fb:{}},ITEMS=[],tab='home',openF=null,res=[],Q='',FQ='',FD='',FK='',LF='',FSORT='manual',SEL=new Set(),SELMODE=false,CR=[],CF={flag:'',type:'',ch:'',only:true,n:60};
+const RF={str:{'חזקה':1,'בינונית':1,'חלשה':0},ch:'',unit:'',txt:'',price:'',strict:false,ctx:false,bld:new Set(),sub:'',type:''};
+const subKey=it=>Core.norm(String(it.ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]),subLab=it=>String(it.ctx||'').replace(/^[\d.\s]+/,'').trim();
+const P=()=>S.prefs;
+const save=()=>Promise.all(KEYS.map(k=>kvSet(k,S[k])));
+const toast=(m,ms=2500)=>{const t=$('#toast');t.innerHTML=m;t.style.display='block';clearTimeout(toast.t);if(ms)toast.t=setTimeout(()=>t.style.display='none',ms)};
+const src=i=>`${i.docName} (גרסה ${i.ver}) · `+(i.page?`עמוד ${i.page}`:`גיליון "${i.sheet}" · שורה ${i.row}`);
+const KIND={boq:'כתב כמויות',spec:'מפרט'},FT=['חיסכון אפשרי','חריג אפשרי','פער בין מסמכים','סיכון לעלות נוספת','נושא לבירור','הזדמנות לתיעוד','אין מספיק מידע לקביעה'];
+const ch=it=>{const c=String(it.ref||'').split(/[.\-\/ ]/)[0];return c||'—'},chName=c=>(P().chap||{})[c]?c+' · '+P().chap[c]:c;
+const nat=(a,b)=>{const x=String(a||'').split(/[.\-\/]/),y=String(b||'').split(/[.\-\/]/);for(let i=0;i<Math.max(x.length,y.length);i++){const p=x[i]??'',q=y[i]??'',n=+p,m=+q;if(p!==q){if(p===''||q==='')return p===''?-1:1;if(!isNaN(n)&&!isNaN(m)&&n!==m)return n-m;const c=p.localeCompare(q,'he');if(c)return c}}return 0};
