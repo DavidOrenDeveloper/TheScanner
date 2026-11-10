@@ -1,9 +1,9 @@
 (function(g){
 let SLR=/(?!)/g;const setSlash=v=>{SLR=v?/(\d)\s*\/\s*(?=\d)/g:/(?!)/g};
-const norm=s=>String(s==null?'':s).replace(/[\u0591-\u05C7]/g,'').replace(/["'“”״׳’‘`]/g,'').toLowerCase().replace(/(\d)\s*[x×*\\]\s*(?=\d)/g,'$1x').replace(SLR,'$1x').replace(/(^|\s)(?:מממר|mm2|ממ2)(?=\s|$)/g,'$1ממר').replace(/[^\u05D0-\u05EAa-z0-9\s.\/-]/g,' ').replace(/[.\-\/]+(?=\s|$)/g,'').replace(/(^|\s)[.\-\/]+/g,' ').replace(/\s+/g,' ').trim();
+const norm=s=>String(s==null?'':s).replace(/[\u0591-\u05C7]/g,'').replace(/["'“”״׳’‘`]/g,'').toLowerCase().replace(/(\d)\s*[x×*\\]\s*(?=\d)/g,'$1x').replace(SLR,'$1x').replace(/(^|\s)(?:מממר|mm2|ממ2)(?=\s|$)/g,'$1ממר').replace(/([\u05D0-\u05EA])-+(?=[\u05D0-\u05EA])/g,'$1 ').replace(/[^\u05D0-\u05EAa-z0-9\s.\/-]/g,' ').replace(/[.\-\/]+(?=\s|$)/g,'').replace(/(^|\s)[.\-\/]+/g,' ').replace(/\s+/g,' ').trim();
 const FIN={ך:'כ',ם:'מ',ן:'נ',ף:'פ',ץ:'צ'};
 const stem=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);if(a.length>3&&'הוכלבמש'.includes(a[0]))a=a.slice(1);return a.replace(/[ךםןףץ]/g,x=>FIN[x])};
-const sv=w=>{const o=new Set();let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);const b=[a];if(a.length>3&&'הוכלבמש'.includes(a[0]))b.push(a.slice(1));for(const x of b){o.add(x);if(x.length>=4&&x.endsWith('ה'))o.add(x.slice(0,-1));if(x.length>=4&&x.endsWith('ת'))o.add(x.slice(0,-1));if(x.length>=3&&x.endsWith('י'))o.add(x.slice(0,-1))}for(const x of [...o]){const s2=x[0]+x.slice(1).replace(/[וי]/g,'');if(s2.length>=3&&s2!==x)o.add(s2)}return[...o].map(z=>z.replace(/[ךםןףץ]/g,y=>FIN[y]))};
+const sv=w=>{const o=new Set();let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);const b=[a];if(a.length>3&&'הוכלבמש'.includes(a[0]))b.push(a.slice(1));for(const x of b){o.add(x);if(x.length>=4&&x.endsWith('ה'))o.add(x.slice(0,-1));if(x.length>=4&&x.endsWith('ת'))o.add(x.slice(0,-1));if(x.length>=3&&x.endsWith('י'))o.add(x.slice(0,-1))}for(const x of [...o]){const s2=x[0]+x.slice(1).replace(/[וי]/g,'');if(s2.length>=3&&s2!==x)o.add(s2)}if(w.length===4&&/(ים|ות)$/.test(w))o.add(w.slice(0,2));if(w.length===3&&w.endsWith('י'))o.add(w.slice(0,2));return[...o].map(z=>z.replace(/[ךםןףץ]/g,y=>FIN[y]))};
 const toks=t=>new Set(norm(t).split(' ').filter(Boolean).flatMap(sv));
 const TG=new Map();
 const tri=w=>{let s=TG.get(w);if(s)return s;s=new Set();const x=' '+w+' ';for(let i=0;i<x.length-2;i++)s.add(x.slice(i,i+3));TG.set(w,s);return s};
@@ -18,17 +18,18 @@ const DEF_SYN=[
 ['הארקה','השוואת פוטנציאלים','אלקטרודת הארקה','מוליך הארקה'],
 ['תאורת חירום','שלט יציאה','שלטי יציאה','גוף חירום','פנס חירום'],
 ['לוח חשמל','לוחות חשמל','לוח','לוחות'],
-['מפסק אוטומטי','מפסק אוטומטי זעיר','מא"ז','מפסק זעיר'],['מפסק אוטומטי מגנטי תרמי','מפסק אוטומטי מגנטו תרמי','מאמ"ת','מגנטו תרמי'],['על הטיח','עה"ט'],['שוה ערך','שווה ערך','שו"ע','שוו"ע']];
+['מפסק אוטומטי','מפסק אוטומטי זעיר','מא"ז','מפסק זעיר'],['מפסק אוטומטי מגנטי תרמי','מפסק אוטומטי מגנטו תרמי','מאמ"ת','מגנטו תרמי'],['על הטיח','עה"ט'],['שוה ערך','שווה ערך','שו"ע','שוו"ע'],
+['אל פסק','אל-פסק','ups','מערכת אל פסק'],['ממסר פחת','מפסק פחת','מפסק זרם דלף','ממסר זרם דלף','מפסק מגן זרם דלף','rcd','rccb'],['מנתק בעומס','מנתק עומס','מפסק עומס'],['אל חלד','נירוסטה','נירוסטא']];
 const CONN=new Set('עבור עם כולל כוללת כוללים לרבות בתוך לפי בעל בעלת בעלי המכיל המכילה המכילים המיועד המיועדת שיבוצע שיבוצעו אשר כמפורט לצורך כגון המשמש המשמשת מחובר המחובר המחוברת הכולל הכוללת במסגרת בצמוד כשהוא כשהיא עי על מול מתוך'.split(' ').map(norm));
 const headOf=n=>{const w=n.split(' '),i=w.findIndex((x,k)=>k>=1&&CONN.has(x));return i>0?w.slice(0,i).join(' '):n};
 const hasP=(ns,p)=>p.length<=3?ns.includes(' '+p+' '):ns.includes(' '+p);
 const prep=it=>{it.n=norm((it.ref||'')+' '+(it.full||it.text));it.nc=norm(it.ctx||'');it.t=toks(it.n);it.tl=it.n.split(/[\s\/\-]+/).filter(Boolean);if(it.kind==='boq'){it.hn=headOf(norm(it.text));it.ht=toks(it.hn)}else{it.hn=null;it.ht=null}return it};
 const bv=w=>{const o=new Set([w]);let a=w;if(a.length>4&&/(ים|ות)$/.test(a)){a=a.slice(0,-2);o.add(a)}const b=[a];if(a.length>3&&'הוכלבמש'.includes(a[0]))b.push(a.slice(1));for(const x of b){o.add(x);if(x.length>=4&&/[הת]$/.test(x))o.add(x.slice(0,-1));if(x.length>=4&&x.endsWith('י'))o.add(x.slice(0,-1))}return[...o].filter(z=>z.length>=3).map(z=>z.replace(/[ךםןףץ]/g,y=>FIN[y]))};
 const skel=w=>{let a=w;if(a.length>4&&/(ים|ות)$/.test(a))a=a.slice(0,-2);return(a[0]+a.slice(1).replace(/[וי]/g,'')).replace(/[ךםןףץ]/g,y=>FIN[y])};
-const tokEq=(a,b)=>{if(a===b)return true;if(a.length<=3||b.length<=3){const[s,l]=a.length<=b.length?[a,b]:[b,a];return s.length>=2&&l.length===s.length+1&&'הולב'.includes(l[0])&&l.slice(1)===s}const x=bv(a),y=bv(b);if(x.some(v=>y.includes(v)))return true;const k=skel(a);return k.length>=3&&k===skel(b)};
+const tokEq=(a,b)=>{if(a===b)return true;if(a.length<=3||b.length<=3){const[s,l]=a.length<=b.length?[a,b]:[b,a];return s.length>=2&&((l.length===s.length+1&&'הולב'.includes(l[0])&&l.slice(1)===s)||(l.length===s.length+1&&l.startsWith(s)&&/[יהת]$/.test(l))||(l.length===s.length+2&&l.startsWith(s)&&/^(?:ים|ות)$/.test(l.slice(s.length))))}const x=bv(a),y=bv(b);if(x.some(v=>y.includes(v)))return true;const k=skel(a);return k.length>=3&&k===skel(b)};
 const hasPh=(tl,pt)=>{for(let i=0;i+pt.length<=tl.length;i++){let ok=true;for(let j=0;j<pt.length;j++)if(!tokEq(tl[i+j],pt[j])){ok=false;break}if(ok)return true}return false};
 const near=(tl,core,w)=>{if(core.length<2)return hasPh(tl,core);const pos=core.map(c=>tl.reduce((a,t,i)=>(tokEq(t,c)&&a.push(i),a),[]));if(pos.some(p=>!p.length))return false;return pos[0].some(i0=>pos.every(p=>p.some(i=>Math.abs(i-i0)<=w)))};
-const subTok=(tl,w,n)=>(/[a-z0-9]/.test(w)&&w.length>=3&&n.includes(w))||w.length>=3&&tl.some(t=>t.length<=w.length+3&&(t.startsWith(w)||(t.length<=w.length+2&&t.endsWith(w))));
+const subTok=(tl,w,n)=>(/[a-z0-9]/.test(w)&&w.length>=3&&n.includes(w))||w.length>=3&&tl.some(t=>t.length<=w.length+3&&(t.startsWith(w)||(t.length<=w.length+2&&t.endsWith(w)&&PFXR.test(t.slice(0,t.length-w.length)))));
 const SANC=new WeakMap(),MRG=new WeakMap();
 const fam=m=>norm(m).split(' ').map(stem).join(' ');
 let TRUST=new Set();const setTrust=a=>{TRUST=new Set((a||[]).map(norm))};
@@ -44,6 +45,23 @@ for(const d of DEF_SYN){const dn=d.map(norm),tg=base.find(g=>g.some(m=>dn.includ
 MRG.set(syn,{sg,v:base});MRG.set(base,{sg:synSig(base),v:base});return base}
 function concepts(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=[];for(const gr of syn){const ps=gr.map(norm).filter(Boolean).map(p=>p.split(' '));const m=ps.find(p=>p.length>=2&&hasPh(qt,p));if(m)out.push({core:m,members:ps})}return out}
 function expand(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=new Set();for(const gr of syn){const ps=gr.map(norm).filter(Boolean);if(ps.some(p=>hasPh(qt,p.split(' '))))ps.forEach(p=>out.add(p))}return[...out]}
+const FINX=w=>w.replace(/[ךםןףץ]/g,y=>FIN[y]);
+const eqForm=(t,w)=>{const A=FINX(t),B=FINX(w);if(A===B||stem(t)===stem(w)||rt(t)===rt(w))return true;if((A.length===B.length+1&&A.startsWith(B)&&/[יהת]$/.test(A))||(B.length===A.length+1&&B.startsWith(A)&&/[יהת]$/.test(B)))return true;if((A.length===B.length+2&&A.startsWith(B)&&/(?:ימ|ות|ינ)$/.test(A))||(B.length===A.length+2&&B.startsWith(A)&&/(?:ימ|ות|ינ)$/.test(B)))return true;for(let L=1;L<=Math.min(3,t.length-2);L++){if(PFXR.test(t.slice(0,L))){const base=t.slice(L);if(base.length>=2&&(FINX(base)===B||rt(base)===rt(w)||stem(base)===stem(w)))return true}}return false};
+const strictTok=(tl,x)=>{let alt=null;for(const t of tl){if(!t||/^\d/.test(t))continue;if(eqForm(t,x.w))return true;if(!alt&&sv(t).some(z=>x.ss.includes(z)))alt=t}return alt||true};
+const cidx=(tl,i)=>{let c=0;for(let k=0;k<i;k++){const n=tl[k];if(n&&n.length>=2&&!/\d/.test(n)&&!STOP.has(n)&&!GEN.has(n)&&!CONN.has(n))c++}return c};
+const posOf=(tl,w)=>{const o=[];for(let i=0;i<tl.length;i++){const t=tl[i];if(tokEq(t,w)||(w.length>=3&&t.startsWith(w)&&t.length<=w.length+3))o.push(i)}return o};
+const spanGap=(tl,ws)=>{const P=ws.map(w=>posOf(tl,w));if(P.some(p=>!p.length))return -1;let best=1e9;for(const a of P[0]){let g=0;for(let k=1;k<P.length;k++){let m=1e9;for(const b of P[k])m=Math.min(m,Math.abs(b-a));g=Math.max(g,m)}best=Math.min(best,g)}return best};
+const POLY=[
+{id:'תעלה',terms:['תעלה','תעלות','תעלת'],senses:[
+{id:'cable',label:'תעלת כבלים',def:1,cues:['כבל','סולם','מחורצ','רשת','פח','מכסה','pvc','מתכת','פלסטית','מלאה','פל']},
+{id:'dig',label:'תעלת חפירה',cues:['חפיר','חציב','אספלט','כביש','קרקע','עפר','מילוי','חול','ריפוד','מדרכה']}]},
+{id:'מעבר',terms:['מעבר'],senses:[
+{id:'phys',label:'מעבר (אש / כבלים / ארון)',def:1,cues:['אש','כבל','קיר','תקרה','הסתעפות','ארון','קידוח','שרוול','פתח','צינור']},
+{id:'time',label:'מעבר (תקופה / תופעה)',cues:['תופעות','תקופת','תקופה','חודש','חודשים','זמני']}]}];
+const cueHit=(t,c)=>{t=FINX(t);c=FINX(c);return c.length>=4?t.includes(c):t.replace(/^[והבלמש]/,'')===c||t===c};
+const polyQ=(words,TQ)=>{const o=[];for(const p of POLY){if(!words.some(w=>p.terms.some(t=>tokEq(w,norm(t)))))continue;let sel=null;for(const sn of p.senses)if(TQ.some(w=>!p.terms.some(t=>tokEq(w,norm(t)))&&sn.cues.some(c=>cueHit(w,c)))){sel=sn;break}if(!sel)sel=p.senses.find(z=>z.def);o.push({p,sel})}return o};
+const polyAdj=(r,PQ,tl)=>{for(const{p,sel}of PQ){const got=new Set();for(let i=0;i<tl.length;i++){if(!p.terms.some(t=>tokEq(tl[i],norm(t))))continue;for(let j=Math.max(0,i-3);j<=Math.min(tl.length-1,i+4);j++){if(j===i)continue;for(const sn of p.senses)if(sn.cues.some(c=>cueHit(tl[j],c)))got.add(sn.id)}}
+if(got.size&&!got.has(sel.id)){const o=p.senses.find(z=>got.has(z.id));r.strength='חלשה';r.sc*=.35;r.poly={id:o.id,label:o.label};r.why.push('משמעות אחרת של המונח: '+o.label+' (חיפשת: '+sel.label+'). לתוצאות מסוג זה חפש במפורש')}}return r};
 function search(q,items,syn,f={}){
 syn=mergeDef(syn);
 const exc=[],phr=[];q=String(q).replace(/(^|\s)-(\S+)/g,(m,a,w)=>{exc.push(norm(w));return a}).replace(/(^|\s)"([^"]+)"(?=\s|$)/g,(m,a,p)=>{phr.push(norm(p));return a+p});
@@ -53,19 +71,19 @@ const isNum=w=>/^\d+(?:[.,]\d+)?$/.test(w);let nums=words.filter(isNum);if(nums.
 const numRe=nums.map(n=>new RegExp('(^|[^\\d.,])'+n.replace(/[.,]/g,'[.,]')+'(?!\\d|[.,]\\d)'));
 const isQ=w=>ci>0&&qualT.includes(w)&&!headT.includes(w);
 const exA=expand(q,syn).filter(p=>!words.includes(p)),exH=ci>0?expand(headT.join(' '),syn).filter(p=>!words.includes(p)):exA,ex=[...new Set([...exH,...exA])];
-const cg=concepts(q,syn);
-const qt=words.map(w=>({w,q:isQ(w),s:stem(w),ss:sv(w),tg:tri(w)})),res=[];const synK=p=>p.split(' ').some(w=>qt.some(x=>x.s===stem(w)||tokEq(w,x.w)))?'s1':'s2';
+const cg=concepts(q,syn),PQ=polyQ(words,TQ);
+const qt=words.map(w=>({w,q:isQ(w),s:stem(w),ss:sv(w),tg:tri(w)})),res=[];const HW=qt.filter(x=>!x.q).map(x=>x.w),TH=4+HW.length*1.5;const synK=p=>p.split(' ').some(w=>qt.some(x=>x.s===stem(w)||tokEq(w,x.w)))?'s1':'s2';
 for(const it of items){
 if(f.doc&&it.docId!==f.doc)continue;if(f.kind&&it.kind!==f.kind)continue;if(exc.length&&exc.some(w=>w&&(it.n.includes(w)||sv(w).some(v=>it.t.has(v)))))continue;if(phr.length&&!phr.every(p=>it.n.includes(p)))continue;
 const tl=it.tl||(it.tl=it.n.split(/[\s\/\-]+/).filter(Boolean));
 if(cg.length&&!cg.every(c=>c.members.some(m=>hasPh(tl,m))||near(tl,c.core,3)))continue;
-let sc=0,hit=0,sy=0,hh=0,nh=0;const why=new Set(),hits=[],UH=!!it.ht,mh=[];
+let sc=0,hit=0,sy=0,hh=0,nh=0,fz=0;const why=new Set(),hits=[],UH=!!it.ht,mh=[];
 qt.forEach((x,xi)=>{let tk,got=true;const H=()=>{if(UH&&!x.q)hh++};
-if(x.ss.some(s=>it.t.has(s))){sc+=3;hit++;why.add('התאמה מדויקת');hits.push({t:x.w,k:'x'});if(UH&&x.ss.some(s=>it.ht.has(s)))H()}
+if(x.ss.some(s=>it.t.has(s))){const fk=strictTok(tl,x);if(fk===true){sc+=3;hit++;why.add('התאמה מדויקת');hits.push({t:x.w,k:'x'});if(UH&&x.ss.some(s=>it.ht.has(s)))H()}else{sc+=1;hit++;fz++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:fk,k:'f'});if(UH&&it.ht.has(fk))H()}}
 else if(subTok(tl,x.w,it.n)){sc+=2;hit++;why.add('המילה מופיעה כחלק ממילה אחרת');hits.push({t:x.w,k:'x'});if(UH&&it.hn.includes(x.w))H()}
 else if(x.w.length>2&&it.nc.includes(x.w)){sc+=1.5;hit++;if(!x.q)nh++;why.add('מופיע בכותרת הפרק / תת-הפרק של השורה');got=false}
-else if(x.s.length>=6&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'});if(UH&&it.ht.has(tk))H()}
-else if(x.w.length>5){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.length)<=2){const d=dice(x.tg,tri(t));if(d>b){b=d;bt=t}}}if(b>=.7){sc+=1;hit++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:bt,k:'f'})}else got=false}
+else if(x.s.length>=6&&(tk=[...it.t].find(t=>lev1(t,x.s)))){sc+=1;hit++;fz++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:tk,k:'f'});if(UH&&it.ht.has(tk))H()}
+else if(x.w.length>5){let b=0,bt;for(const t of it.t){if(Math.abs(t.length-x.w.length)<=2){const d=dice(x.tg,tri(t));if(d>b){b=d;bt=t}}}if(b>=.7){sc+=1;hit++;fz++;why.add('כתיב דומה (התאמה מטושטשת)');hits.push({t:bt,k:'f'})}else got=false}
 else got=false;
 mh[xi]=got});
 const ns=' '+it.n+' ';
@@ -73,13 +91,16 @@ let numHit=null;if(nums.length){numHit=numRe.every(r=>r.test(it.n))}
 if(ci>0){const hw=qt.map((x,i)=>[x,i]).filter(([x])=>!x.q);if(hw.length&&!(hw.every(([,i])=>mh[i])||exH.some(p=>hasP(ns,p))))continue}
 for(const p of ex){if(hasP(ns,p)){sy+=2;why.add('מילה נרדפת: '+p);hits.push({t:p,k:synK(p)});if(UH&&hasP(' '+it.hn+' ',p))hh++;if(sy>=6)break}}
 if(numHit){sc+=8;nums.forEach(n=>hits.push({t:n,k:'n'}));why.add('המידה '+nums.join(', ')+' תואמת')}
-const lit=hit;let cov=0;for(const c of cg)if(c.members.some(m=>hasPh(tl,m)))cov+=c.core.length;if(cov&&hit<qt.length){hit=Math.min(qt.length,Math.max(hit,cov));why.add('מושג שקול במילון (למשל שוחה = תא בקרה / תא בזק)')}
+const lit=hit-fz;let cov=0;for(const c of cg)if(c.members.some(m=>hasPh(tl,m)))cov+=c.core.length;if(cov&&hit<qt.length){hit=Math.min(qt.length,Math.max(hit,cov));why.add('מושג שקול במילון (למשל שוחה = תא בקרה / תא בזק)')}
 sc+=sy+hit/qt.length*2;if(!hit&&!sy)continue;
 if(ci>0&&qt.some((x,i)=>x.q&&mh[i])){sc+=1.5;why.add('מופיע גם ההקשר שציינת ('+qualT.join(' ')+')')}
 const ctxOnly=UH&&!hh&&!nh;let strength=lit===qt.length?'חזקה':hit===qt.length?'בינונית':(qt.length===1?sy>=2:(hit>0&&sy>=2))?'בינונית':'חלשה';if(UH&&!hh&&nh&&strength==='חזקה')strength='בינונית';if(numHit&&strength==='בינונית'&&hit>=qt.length)strength='חזקה';
 if(numHit===false){sc*=.55;why.add('אותו פריט אבל ללא המידה '+nums.join(', '));if(strength==='חזקה')strength='בינונית'}
 if(ctxOnly){strength='חלשה';sc*=.3;why.add('מוזכר רק בהקשר (אחרי "עבור / עם / כולל…") – הפריט עצמו הוא משהו אחר')}
-res.push(formify({it,sc,strength,why:[...why],hits,ctxOnly,num:numHit===null?null:numHit?1:0}))}
+const rr=formify({it,sc,strength,why:[...why],hits,ctxOnly,num:numHit===null?null:numHit?1:0});
+if(HW.length>=2&&lit>=HW.length&&rr.strength!=='חלשה'){const g=spanGap(tl,HW);if(g>TH){rr.strength=g>16||rr.strength==='בינונית'?'חלשה':'בינונית';rr.sc*=.7;rr.why.push('מילות החיפוש רחוקות זו מזו בתיאור ('+g+' מילים) – לא מופיעות כביטוי')}}
+if(HW.length>=2&&rr.strength!=='חלשה'&&rr.fm&&rr.fm.role==='main'){const ps=posOf(tl,HW[0]);if(ps.length&&cidx(tl,ps[0])>=ROLEPOS){rr.strength='חלשה';rr.sc*=.6;rr.fm.role='inc';rr.why.push('המונח הראשי "'+HW[0]+'" מופיע בהמשך התיאור, לא בראשו – הפריט עצמו הוא משהו אחר')}}
+if(PQ.length)polyAdj(rr,PQ,tl);res.push(rr)}
 return res.sort((a,b)=>b.sc-a.sc).slice(0,f.max||3000)}
 
 
@@ -159,10 +180,10 @@ function related(res,q){const qs=new Set(norm(q).split(' ').map(stem)),C=new Map
 return[...C].filter(([,c])=>c>=2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0])}
 const FINN=w=>w.replace(/[ךםןףץ]/g,y=>FIN[y]);
 const PFXR=/^ו?(?:ש[כלבמ]?|[כלבמ]ש?)?ה?$/;
-const rt=w=>{let a=w;if(a.length>4&&/(ים|ות|ין)$/.test(a))a=a.slice(0,-2);if(a.length>=4&&/[יהת]$/.test(a))a=a.slice(0,-1);return FINN(a)};
+const rt=w=>{let a=w;if(a.length>4&&/(ים|ות|ין)$/.test(a))a=a.slice(0,-2);if((a.length>=4&&/[יהת]$/.test(a))||(a.length===3&&/י$/.test(a)))a=a.slice(0,-1);return FINN(a)};
 function classTok(n,p,k){if(k==='n')return{c:'n'};if(k==='s2'||k==='f')return{c:k};
 const b=FINN(p);if(FINN(n)===b)return{c:k==='s1'?'s1':'x'};
-for(let L=Math.min(3,n.length-3);L>=1;L--){const pre=n.slice(0,L);if(PFXR.test(pre)){const base=n.slice(L);if(base.length>=3&&(FINN(base)===b||rt(base)===rt(p)))return{c:'p',pf:pre}}}
+for(let L=Math.min(3,n.length-2);L>=1;L--){const pre=n.slice(0,L);if(PFXR.test(pre)){const base=n.slice(L);if(base.length>=(p.length<=3?2:3)&&(FINN(base)===b||rt(base)===rt(p)))return{c:'p',pf:pre}}}
 if(rt(n)===rt(p))return{c:'s1'};return{c:'f'}}
 function highlight(raw,hits,mode){raw=String(raw);const out=[],re=/[\u05D0-\u05EA\w"'׳״]+(?:[.\-*×\\][\u05D0-\u05EA\w]+)*/g,sp=[];let m;
 while(m=re.exec(raw))sp.push({s:m.index,e:m.index+m[0].length,n:norm(m[0])});const mk=new Array(sp.length).fill(null),pf=new Array(sp.length).fill('');
@@ -249,4 +270,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,setSlash,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core,isGen,classTok,itemAttrs,ATT};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={POLY,setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,setSlash,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core,isGen,classTok,itemAttrs,ATT};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
