@@ -35,6 +35,12 @@ else if(a==='syns')await mut(()=>S.syn=$('#syn').value.split('\n').map(l=>l.spli
 else if(a==='synr'){if(await confirmD('לשחזר את מילון ברירת המחדל? שינויים שלך יימחקו.','שחזר'))await mut(()=>S.syn=Core.DEF_SYN)}
 else if(a==='bk'){const d={v:2,docs:S.docs,folders:S.folders,finds:S.finds,trash:S.trash,syn:S.syn,prefs:S.prefs,cmp:S.cmp,fb:S.fb,items:ITEMS.map(strip)},l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));l.download='גיבוי-'+new Date().toISOString().slice(0,10)+'.json';l.click()}
 else if(a==='vm'){pm.vm=i;await save();document.querySelectorAll('[data-a=vm]').forEach(x=>x.classList.toggle('on',x.dataset.i===i));render()}
+else if(a==='icf'){RF.attr=(!i||RF.attr===i)?'':i;renderList()}
+else if(a==='icto'){ICO=!ICO;updCard()}
+else if(a==='rfo'){RF.fo.has(i)?RF.fo.delete(i):RF.fo.add(i);renderList()}
+else if(a==='rfop'){RF.fo=new Set();if(i==='x')res.forEach(r=>r.fm&&r.fm.forms.forEach(f=>{if(f!=='x')RF.fo.add(f)}));renderList()}
+else if(a==='rrole'){RF.role=!RF.role?(i==='main'?'inc':'main'):'';renderList()}
+else if(a==='rforeset'){RF.fo=new Set();RF.role='';renderList()}
 else if(a==='rstr'){RF.str[i]=RF.str[i]?0:1;b.classList.toggle('on',!!RF.str[i]);renderList()}
 else if(a==='selmode'){SELMODE=!SELMODE;toast(SELMODE?'מצב בחירה: גרור אצבע/עכבר על התוצאות לסימון':'מצב בחירה כבוי');render()}
 else if(a==='chaps'){const pn=PANEL;const cs=[...new Set(ITEMS.filter(x=>x.kind==='boq').map(ch))].sort(nat);const v=await modal(`<b>שמות פרקים</b><div class="src">למשל 01 = חניונים, 06 = פיתוח</div><div class="chapl">${cs.map(c=>`<div class="row"><b style="flex:0 0 50px">${esc(c)}</b><input data-ch="${esc(c)}" value="${esc((pm.chap||{})[c]||'')}"></div>`).join('')}</div>`,()=>[...D().querySelectorAll('[data-ch]')].reduce((o,x)=>(x.value.trim()&&(o[x.dataset.ch]=x.value.trim()),o),{}));if(v){pm.chap=v;await save();render()}if(pn)openPanel(pn.title,pn.body)}
