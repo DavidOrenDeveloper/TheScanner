@@ -57,7 +57,7 @@ else if(a==='weakall'){RF.str['חלשה']=1;renderList()}
 else if(a==='preset'){if(i==='strict'){RF.str={'חזקה':1,'בינונית':0,'חלשה':0};RF.ctx=false}else if(i==='bal'){RF.str={'חזקה':1,'בינונית':1,'חלשה':0};RF.ctx=false}else{RF.str={'חזקה':1,'בינונית':1,'חלשה':1};RF.ctx=true}RF.strict=false;try{D().close()}catch(e){}renderList();toast(i==='strict'?'רמת סינון: מדויק':i==='bal'?'רמת סינון: מאוזן':'רמת סינון: רחב',2000)}
 else if(a==='rbld'){RF.bld.has(i)?RF.bld.delete(i):RF.bld.add(i);b.classList.toggle('on',RF.bld.has(i));renderList()}
 else if(a==='goto'){const e=document.getElementById(i);if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}
-else if(a==='xexp')doExport();else if(a==='viewpg')openSrc(i);
+else if(a==='xexp')doExport();else if(a==='pwainst')installApp();else if(a==='viewpg')openSrc(i);
 else if(a==='offb'||a==='offp'||a==='offall'){}
 else if(a==='ctlt'){if(tab==='home')await modal(filtHtml(),null,'סגור');else{CTLOPEN=!CTLOPEN;const mm=document.querySelector('.ctlmore');if(mm)mm.hidden=!CTLOPEN;b.textContent=b.textContent.replace(/[▴▾]/,CTLOPEN?'▴':'▾')}}
 else if(a==='runcmp')runCmp();

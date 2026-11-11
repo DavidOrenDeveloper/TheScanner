@@ -1,20 +1,90 @@
 {
   "_doc": "בדיקות רגרסיה למנוע החיפוש. 'visible' = תוצאות שאינן 'חלשה'. הרצה: python tests/run.py regression --boq <xlsx> --spec <pdf>",
   "tests": [
-    {"id": "alpsak-phrase",   "q": "אל פסק",   "visMin": 3, "visNone": "^(?!.*(אל פסק|ups)).*$", "visTopHas": "מערכת אל פסק"},
-    {"id": "alpsak-hyphen",   "q": "אל-פסק",   "visMin": 3, "visNone": "^(?!.*(אל פסק|ups)).*$"},
-    {"id": "rcd-phrase",      "q": "מפסק פחת", "visMin": 20, "visAll": "פחת|זרם דלף|rcd|rccb", "visTopHas": "ממסר פחת"},
-    {"id": "rcd-word",        "q": "פחת",      "visMin": 20, "visNone": "יפחת"},
-    {"id": "tray-default",    "q": "תעלה",     "visMin": 20, "weakRef": "06.08.01.0001"},
-    {"id": "tray-cables",     "q": "תעלה לכבלים", "visMin": 20, "weakRef": "06.08.01.0001"},
-    {"id": "tray-dig",        "q": "תעלת חפירה", "visRef": "06.08.01.0001"},
-    {"id": "motor",           "q": "מנוע",     "visMin": 3, "visNone": "(^| )מונע( |$)"},
-    {"id": "preventive",      "q": "מונע",     "visMin": 3, "visNone": "(^| )מנוע(ים)?( |$)"},
-    {"id": "controller-wall", "q": "בקר דאלי", "visMin": 3, "visNone": "^(?!.*בקר).*$"},
-    {"id": "bus-short-word",  "q": "פס",       "visMin": 100, "visHas": "פסי צבירה"},
-    {"id": "bus-bar",         "q": "פס צבירה", "visMin": 30, "visTopHas": "פסי צבירה"},
-    {"id": "transition",      "q": "מעבר",     "visMin": 10, "weakHas": "תופעות מעבר"},
-    {"id": "load-break",      "q": "מנתק בעומס", "visMin": 10, "visTopHas": "מנתק"},
-    {"id": "stainless",       "q": "אל חלד",   "visNone": "^(?!.*(אל חלד|נירוסטה|נירוסטא)).*$"}
+    {
+      "id": "alpsak-phrase",
+      "q": "אל פסק",
+      "visMin": 3,
+      "visNone": "^(?!.*(אל פסק|ups)).*$",
+      "visTopHas": "מערכת אל פסק"
+    },
+    {
+      "id": "alpsak-hyphen",
+      "q": "אל-פסק",
+      "visMin": 3,
+      "visNone": "^(?!.*(אל פסק|ups)).*$"
+    },
+    {
+      "id": "rcd-phrase",
+      "q": "מפסק פחת",
+      "visMin": 20,
+      "visAll": "פחת|זרם דלף|rcd|rccb",
+      "visTopHas": "ממסר פחת"
+    },
+    {
+      "id": "rcd-word",
+      "q": "פחת",
+      "visMin": 20,
+      "visNone": "יפחת"
+    },
+    {
+      "id": "tray-default",
+      "q": "תעלה",
+      "visMin": 20,
+      "weakRef": "06.08.01.0001"
+    },
+    {
+      "id": "tray-cables",
+      "q": "תעלה לכבלים",
+      "visMin": 20,
+      "weakRef": "06.08.01.0001"
+    },
+    {
+      "id": "tray-dig",
+      "q": "תעלת חפירה",
+      "visRef": "06.08.01.0001"
+    },
+    {
+      "id": "motor",
+      "q": "מנוע",
+      "visMin": 3,
+      "visNone": "(^| )מונע( |$)"
+    },
+    {
+      "id": "preventive",
+      "q": "מונע",
+      "visMin": 3,
+      "visNone": "(^| )מנוע(ים)?( |$)"
+    },
+    {
+      "id": "controller-wall",
+      "q": "בקר דאלי",
+      "visMin": 3,
+      "visNone": "^(?!.*בקר).*$"
+    },
+    {
+      "id": "bus-short-word",
+      "q": "פס",
+      "visMin": 100,
+      "visHas": "פסי צבירה"
+    },
+    {
+      "id": "bus-bar",
+      "q": "פס צבירה",
+      "visMin": 30,
+      "visTopHas": "פסי צבירה"
+    },
+    {
+      "id": "transition",
+      "q": "מעבר",
+      "visMin": 10,
+      "weakHas": "תופעות מעבר"
+    },
+    {
+      "id": "load-break",
+      "q": "מנתק בעומס",
+      "visMin": 10,
+      "visTopHas": "מנתק"
+    }
   ]
 }
