@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CHECK_JS = r"""(tests)=>tests.map(t=>{
- const res=Core.search(t.q,ITEMS,S.syn,{}),vis=res.filter(r=>r.strength!=='חלשה'),weak=res.filter(r=>r.strength==='חלשה'),errs=[];
+ const res=Core.searchMulti(t.q,ITEMS,S.syn,{poly:S.poly}),vis=res.filter(r=>r.strength!=='חלשה'),weak=res.filter(r=>r.strength==='חלשה'),errs=[];
  if(t.visMin!=null&&vis.length<t.visMin)errs.push('נמצאו '+vis.length+' גלויות, נדרש '+t.visMin);
  if(t.visNone){const re=new RegExp(t.visNone),b=vis.filter(r=>re.test(r.it.n));if(b.length)errs.push(b.length+' תוצאות גלויות אסורות, למשל: '+(b[0].it.ref||'')+' '+(b[0].it.text||'').slice(0,60))}
  if(t.visAll){const re=new RegExp(t.visAll),b=vis.filter(r=>!re.test(r.it.n));if(b.length)errs.push(b.length+' תוצאות גלויות בלי "'+t.visAll+'", למשל: '+(b[0].it.ref||'')+' '+(b[0].it.text||'').slice(0,60))}

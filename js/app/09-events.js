@@ -32,13 +32,13 @@ else if(a==='fdr')copy(S.finds[i].draft||'');
 else if(a==='fxlf')xl('ממצאים-מסחריים',['סוג','תיאור','מקור','למה חשוב','מה לבדוק','מה לתעד','המלצה','טיוטת פנייה'],S.finds.map(x=>[x.type,x.title,x.source,x.why,x.check,x.doc,x.action,x.draft].map(v=>v||'')),[18,40,40,40,30,30,30,50]);
 else if(a==='fprf')window.print();
 else if(a==='syns')await mut(()=>S.syn=$('#syn').value.split('\n').map(l=>l.split(',').map(s=>s.trim()).filter(Boolean)).filter(g=>g.length>1));
-else if(a==='synr'){if(await confirmD('לשחזר את מילון ברירת המחדל? שינויים שלך יימחקו.','שחזר'))await mut(()=>S.syn=Core.DEF_SYN)}
-else if(a==='bk'){const d={v:2,docs:S.docs,folders:S.folders,finds:S.finds,trash:S.trash,syn:S.syn,prefs:S.prefs,cmp:S.cmp,fb:S.fb,items:ITEMS.map(strip)},l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));l.download='גיבוי-'+new Date().toISOString().slice(0,10)+'.json';l.click()}
+else if(a==='synr'){if(await confirmD('לשחזר את מילון ברירת המחדל? שינויים שלך יימחקו.','שחזר'))await mut(()=>{S.syn=Core.DEF_SYN.map(g=>[...g]);P().synDel=[];Core.setSynDel([])})}
+else if(a==='bk'){const d={v:2,docs:S.docs,folders:S.folders,finds:S.finds,trash:S.trash,syn:S.syn,poly:S.poly,prefs:S.prefs,cmp:S.cmp,fb:S.fb,items:ITEMS.map(strip)},l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));l.download='גיבוי-'+new Date().toISOString().slice(0,10)+'.json';l.click()}
 else if(a==='vm'){pm.vm=i;await save();document.querySelectorAll('[data-a=vm]').forEach(x=>x.classList.toggle('on',x.dataset.i===i));render()}
 else if(a==='icf'){RF.attr=(!i||RF.attr===i)?'':i;renderList()}
 else if(a==='icto'){ICO=!ICO;updCard()}
 else if(a==='rfo'){RF.fo.has(i)?RF.fo.delete(i):RF.fo.add(i);renderList()}
-else if(a==='rfop'){RF.fo=new Set();if(i==='x')res.forEach(r=>r.fm&&r.fm.forms.forEach(f=>{if(f!=='x')RF.fo.add(f)}));renderList()}
+else if(a==='rfsolo'){const fs=[...document.querySelectorAll('#fbar [data-a=rfo]')].map(x=>x.dataset.i);RF.fo=(RF.fo.size===fs.length-1&&!RF.fo.has(i))?new Set():new Set(fs.filter(x=>x!==i));renderList()}else if(a==='rfop'){RF.fo=new Set();if(i==='x')res.forEach(r=>r.fm&&r.fm.forms.forEach(f=>{if(f!=='x')RF.fo.add(f)}));renderList()}
 else if(a==='rrole'){RF.role=!RF.role?(i==='main'?'inc':'main'):'';renderList()}
 else if(a==='rforeset'){RF.fo=new Set();RF.role='';renderList()}
 else if(a==='rstr'){RF.str[i]=RF.str[i]?0:1;b.classList.toggle('on',!!RF.str[i]);renderList()}
@@ -57,7 +57,7 @@ else if(a==='weakall'){RF.str['חלשה']=1;renderList()}
 else if(a==='preset'){if(i==='strict'){RF.str={'חזקה':1,'בינונית':0,'חלשה':0};RF.ctx=false}else if(i==='bal'){RF.str={'חזקה':1,'בינונית':1,'חלשה':0};RF.ctx=false}else{RF.str={'חזקה':1,'בינונית':1,'חלשה':1};RF.ctx=true}RF.strict=false;try{D().close()}catch(e){}renderList();toast(i==='strict'?'רמת סינון: מדויק':i==='bal'?'רמת סינון: מאוזן':'רמת סינון: רחב',2000)}
 else if(a==='rbld'){RF.bld.has(i)?RF.bld.delete(i):RF.bld.add(i);b.classList.toggle('on',RF.bld.has(i));renderList()}
 else if(a==='goto'){const e=document.getElementById(i);if(e)e.scrollIntoView({behavior:'smooth',block:'start'})}
-else if(a==='xexp')doExport();else if(a==='pwainst')installApp();else if(a==='viewpg')openSrc(i);
+else if(a==='xexp')doExport();else if(a==='pwainst')installApp();else if(a==='sgedit')sgEdit(i);else if(a==='sgdel')sgDel(+i);else if(a==='pledit')plEdit(i);else if(a==='pldel')plDel(+i);else if(a==='plreset')plReset();else if(a==='viewpg')openSrc(i);
 else if(a==='offb'||a==='offp'||a==='offall'){}
 else if(a==='ctlt'){if(tab==='home')await modal(filtHtml(),null,'סגור');else{CTLOPEN=!CTLOPEN;const mm=document.querySelector('.ctlmore');if(mm)mm.hidden=!CTLOPEN;b.textContent=b.textContent.replace(/[▴▾]/,CTLOPEN?'▴':'▾')}}
 else if(a==='runcmp')runCmp();
@@ -78,14 +78,14 @@ else if(a==='cadd'){const x=it(),t=await selFolder('הוספה לתיק');if(t)a
 else if(a==='cexp'){xl('השוואה-כתב-כמויות-מול-מפרט',['סעיף','תיאור','כמות','יחידה','מחיר','כל נתוני השורה','סעיפי מפרט תואמים','דגלים','סוגי ממצא','אופן ביצוע בפועל','עלות בפועל ליחידה','רווח צפוי'],cmpRows().map(r=>{const b=r.b,c=S.cmp[b.id]||{},pf=(+b.price-+c.cost)*(+b.qty||0);return[b.ref,b.text,b.qty,b.unit,b.price,fieldsStr(b),r.m.map(m=>m.it.ref+' (עמ׳ '+m.it.page+')').join(', '),r.flags.map(f=>f.k).join(' | '),[...new Set(r.flags.map(f=>f.t))].join(' | '),c.how||'',c.cost||'',+c.cost>0&&+b.price>0?Math.round(pf):'']}),[12,60,8,8,8,40,30,40,30,30,12,12])}});
 document.addEventListener('change',async e=>{const t=e.target,a=t.dataset.a,pm=P();
 if(t.id==='up'){upload([...t.files]);t.value=''}
-else if(t.id==='rf'){const f=t.files[0];if(!f||!await confirmD('השחזור יחליף את כל הנתונים הקיימים. להמשיך?','שחזר'))return;try{const d=JSON.parse(await f.text());if(!d.v||!d.items)throw Error('קובץ גיבוי לא תקין');await clearItems();await rq(st('files','readwrite').clear());PDFC.clear();EMB.clear();await rq(st('emb','readwrite').clear());await putItems(d.items);KEYS.forEach(k=>S[k]=d[k]||(k==='cmp'||k==='fb'?{}:k==='prefs'?{...DEFP}:[]));ITEMS=d.items.map(Core.prep);Core.inherit(ITEMS,S.prefs.inh!==false);await save();toast('שוחזר בהצלחה');render()}catch(x){toast('שגיאה בשחזור: '+x.message)}}
+else if(t.id==='rf'){const f=t.files[0];if(!f||!await confirmD('השחזור יחליף את כל הנתונים הקיימים. להמשיך?','שחזר'))return;try{const d=JSON.parse(await f.text());if(!d.v||!d.items)throw Error('קובץ גיבוי לא תקין');await clearItems();await rq(st('files','readwrite').clear());PDFC.clear();EMB.clear();await rq(st('emb','readwrite').clear());await putItems(d.items);KEYS.forEach(k=>S[k]=d[k]||(k==='cmp'||k==='fb'?{}:k==='prefs'?{...DEFP}:k==='poly'?JSON.parse(JSON.stringify(Core.POLY)):[]));Core.setSynDel(S.prefs.synDel);ITEMS=d.items.map(Core.prep);Core.inherit(ITEMS,S.prefs.inh!==false);await save();toast('שוחזר בהצלחה');render()}catch(x){toast('שגיאה בשחזור: '+x.message)}}
 else if(a==='note'){fold().items[t.dataset.i].note=t.value;await save();render()}
 else if(a==='fe'){S.finds[t.dataset.i][t.dataset.f]=t.value;await save()}
 else if(a==='cm'){const c=S.cmp[t.dataset.i]=S.cmp[t.dataset.i]||{};c[t.dataset.f]=t.value;await save();if(t.dataset.f==='cost')render()}
 else if(a==='sort'){pm.sort=t.value;await save();renderList()}
 else if(a==='rsub'){RF.sub=t.value;renderList()}else if(a==='rtype'){RF.type=t.value;renderList()}
 else if(a==='rch'){RF.ch=t.value;renderList()}else if(a==='runit'){RF.unit=t.value;renderList()}else if(a==='rprice'){RF.price=t.value;renderList()}
-else if(a==='hl'){pm.hl=t.checked;await save();render()}
+else if(a==='rfo'){t.checked?RF.fo.delete(t.dataset.i):RF.fo.add(t.dataset.i);renderList()} else if(a==='hl'){pm.hl=t.checked;await save();render()}
 else if(a==='sem'){pm.sem=t.checked;await save()}
 else if(a==='semadd'){pm.semAdd=t.checked;await save()}
 else if(a==='strict'){RF.strict=t.checked;renderList()}

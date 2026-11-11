@@ -19,7 +19,8 @@ const DEF_SYN=[
 ['תאורת חירום','שלט יציאה','שלטי יציאה','גוף חירום','פנס חירום'],
 ['לוח חשמל','לוחות חשמל','לוח','לוחות'],
 ['מפסק אוטומטי','מפסק אוטומטי זעיר','מא"ז','מפסק זעיר'],['מפסק אוטומטי מגנטי תרמי','מפסק אוטומטי מגנטו תרמי','מאמ"ת','מגנטו תרמי'],['על הטיח','עה"ט'],['שוה ערך','שווה ערך','שו"ע','שוו"ע'],
-['אל פסק','אל-פסק','ups','מערכת אל פסק'],['ממסר פחת','מפסק פחת','מפסק זרם דלף','ממסר זרם דלף','מפסק מגן זרם דלף','rcd','rccb'],['מנתק בעומס','מנתק עומס']];
+['אל פסק','אל-פסק','ups','מערכת אל פסק'],['ממסר פחת','מפסק פחת','מפסק זרם דלף','ממסר זרם דלף','מפסק מגן זרם דלף','rcd','rccb'],['מנתק בעומס','מנתק עומס'],
+['לחצן ניתוק','לחצן הפסקה','לחצן פטריה','לחצן חירום','לחצן הפסקת חירום'],['שנאי זרם','משני זרם','משנה זרם'],['חסין אש','עמיד אש','עמידים באש']];
 const CONN=new Set('עבור עם כולל כוללת כוללים לרבות בתוך לפי בעל בעלת בעלי המכיל המכילה המכילים המיועד המיועדת שיבוצע שיבוצעו אשר כמפורט לצורך כגון המשמש המשמשת מחובר המחובר המחוברת הכולל הכוללת במסגרת בצמוד כשהוא כשהיא עי על מול מתוך'.split(' ').map(norm));
 const headOf=n=>{const w=n.split(' '),i=w.findIndex((x,k)=>k>=1&&CONN.has(x));return i>0?w.slice(0,i).join(' '):n};
 const hasP=(ns,p)=>p.length<=3?ns.includes(' '+p+' '):ns.includes(' '+p);
@@ -30,7 +31,7 @@ const tokEq=(a,b)=>{if(a===b)return true;if(a.length<=3||b.length<=3){const[s,l]
 const hasPh=(tl,pt)=>{for(let i=0;i+pt.length<=tl.length;i++){let ok=true;for(let j=0;j<pt.length;j++)if(!tokEq(tl[i+j],pt[j])){ok=false;break}if(ok)return true}return false};
 const near=(tl,core,w)=>{if(core.length<2)return hasPh(tl,core);const pos=core.map(c=>tl.reduce((a,t,i)=>(tokEq(t,c)&&a.push(i),a),[]));if(pos.some(p=>!p.length))return false;return pos[0].some(i0=>pos.every(p=>p.some(i=>Math.abs(i-i0)<=w)))};
 const subTok=(tl,w,n)=>(/[a-z0-9]/.test(w)&&w.length>=3&&n.includes(w))||w.length>=3&&tl.some(t=>t.length<=w.length+3&&(t.startsWith(w)||(t.length<=w.length+2&&t.endsWith(w)&&PFXR.test(t.slice(0,t.length-w.length)))));
-const SANC=new WeakMap(),MRG=new WeakMap();
+const SANC=new WeakMap();let MRG=new WeakMap(),SYNDEL=new Set();const setSynDel=a=>{SYNDEL=new Set((a||[]).map(norm));MRG=new WeakMap()};
 const fam=m=>norm(m).split(' ').map(stem).join(' ');
 let TRUST=new Set();const setTrust=a=>{TRUST=new Set((a||[]).map(norm))};
 const synSig=s=>s.length+':'+TRUST.size+':'+s.reduce((a,g)=>a+g.length+g.reduce((b,m)=>b+String(m).length,0),0);
@@ -41,7 +42,7 @@ function mergeDef(syn){const sg=synSig(syn),e0=MRG.get(syn);if(e0&&e0.sg===sg)re
 for(const g0 of cleanSyn(syn)){const g=[...g0],gn=g.map(norm);if(gn.some(m=>TRUST.has(m))){base.push(g);continue}const hit=DN.map((d,i)=>gn.some(m=>d.includes(m))?i:-1).filter(i=>i>=0),nf=new Set(g.map(fam)).size;
 if(!hit.length){if(nf<=12)base.push(g);continue}
 if(hit.length===1&&nf<=DN[hit[0]].length+14)base.push(g)}
-for(const d of DEF_SYN){const dn=d.map(norm),tg=base.find(g=>g.some(m=>dn.includes(norm(m))));if(!tg){base.push([...d]);continue}const have=tg.map(norm);d.forEach((m,i)=>{if(!have.includes(dn[i]))tg.push(m)})}
+for(const d0 of DEF_SYN){const d=d0.filter(m=>!SYNDEL.has(norm(m)));if(d.length<2)continue;const dn=d.map(norm);const tg=base.find(g=>g.some(m=>dn.includes(norm(m))));if(!tg){base.push([...d]);continue}const have=tg.map(norm);d.forEach((m,i)=>{if(!have.includes(dn[i]))tg.push(m)})}
 MRG.set(syn,{sg,v:base});MRG.set(base,{sg:synSig(base),v:base});return base}
 function concepts(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=[];for(const gr of syn){const ps=gr.map(norm).filter(Boolean).map(p=>p.split(' '));const m=ps.find(p=>p.length>=2&&hasPh(qt,p));if(m)out.push({core:m,members:ps})}return out}
 function expand(q,syn){const qt=norm(q).split(' ').filter(Boolean),out=new Set();for(const gr of syn){const ps=gr.map(norm).filter(Boolean);if(ps.some(p=>hasPh(qt,p.split(' '))))ps.forEach(p=>out.add(p))}return[...out]}
@@ -59,9 +60,13 @@ const POLY=[
 {id:'phys',label:'מעבר (אש / כבלים / ארון)',def:1,cues:['אש','כבל','קיר','תקרה','הסתעפות','ארון','קידוח','שרוול','פתח','צינור']},
 {id:'time',label:'מעבר (תקופה / תופעה)',cues:['תופעות','תקופת','תקופה','חודש','חודשים','זמני']}]}];
 const cueHit=(t,c)=>{t=FINX(t);c=FINX(c);return c.length>=4?t.includes(c):t.replace(/^[והבלמש]/,'')===c||t===c};
-const polyQ=(words,TQ)=>{const o=[];for(const p of POLY){if(!words.some(w=>p.terms.some(t=>tokEq(w,norm(t)))))continue;let sel=null;for(const sn of p.senses)if(TQ.some(w=>!p.terms.some(t=>tokEq(w,norm(t)))&&sn.cues.some(c=>cueHit(w,c)))){sel=sn;break}if(!sel)sel=p.senses.find(z=>z.def);o.push({p,sel})}return o};
+const polyQ=(PL,words,TQ)=>{const o=[];for(const p of PL){if(!words.some(w=>p.terms.some(t=>tokEq(w,norm(t)))))continue;let sel=null;for(const sn of p.senses)if(TQ.some(w=>!p.terms.some(t=>tokEq(w,norm(t)))&&sn.cues.some(c=>cueHit(w,c)))){sel=sn;break}if(!sel)sel=p.senses.find(z=>z.def);o.push({p,sel})}return o};
 const polyAdj=(r,PQ,tl)=>{for(const{p,sel}of PQ){const got=new Set();for(let i=0;i<tl.length;i++){if(!p.terms.some(t=>tokEq(tl[i],norm(t))))continue;for(let j=Math.max(0,i-3);j<=Math.min(tl.length-1,i+4);j++){if(j===i)continue;for(const sn of p.senses)if(sn.cues.some(c=>cueHit(tl[j],c)))got.add(sn.id)}}
 if(got.size&&!got.has(sel.id)){const o=p.senses.find(z=>got.has(z.id));r.strength='חלשה';r.sc*=.35;r.poly={id:o.id,label:o.label};r.why.push('משמעות אחרת של המונח: '+o.label+' (חיפשת: '+sel.label+'). לתוצאות מסוג זה חפש במפורש')}}return r};
+const splitQ=q=>String(q).split(/\s*[|;]\s*|(?<!\d)\s*\/\s*(?!\d)/).map(s=>s.trim()).filter(s=>/[\u05D0-\u05EAa-z]{2}/i.test(s));
+function searchMulti(q,items,syn,f={},fn){fn=fn||search;const parts=splitQ(q);if(parts.length<2)return fn(q,items,syn,f);const m=new Map();
+for(const p of parts)for(const r of fn(p,items,syn,f)){r.why=['מתוך החיפוש: '+p,...(r.why||[])];const o=m.get(r.it.id);if(!o)m.set(r.it.id,r);else{const k=r.sc>o.sc?r:o,x=k===r?o:r;k.why.push('נמצא גם ב: '+x.why[0].replace('מתוך החיפוש: ',''));m.set(r.it.id,k)}}
+return[...m.values()].sort((a,b)=>b.sc-a.sc)}
 function search(q,items,syn,f={}){
 syn=mergeDef(syn);
 const exc=[],phr=[];q=String(q).replace(/(^|\s)-(\S+)/g,(m,a,w)=>{exc.push(norm(w));return a}).replace(/(^|\s)"([^"]+)"(?=\s|$)/g,(m,a,p)=>{phr.push(norm(p));return a+p});
@@ -71,8 +76,8 @@ const isNum=w=>/^\d+(?:[.,]\d+)?$/.test(w);let nums=words.filter(isNum);if(nums.
 const numRe=nums.map(n=>new RegExp('(^|[^\\d.,])'+n.replace(/[.,]/g,'[.,]')+'(?!\\d|[.,]\\d)'));
 const isQ=w=>ci>0&&qualT.includes(w)&&!headT.includes(w);
 const exA=expand(q,syn).filter(p=>!words.includes(p)),exH=ci>0?expand(headT.join(' '),syn).filter(p=>!words.includes(p)):exA,ex=[...new Set([...exH,...exA])];
-const cg=concepts(q,syn),PQ=polyQ(words,TQ);
-const qt=words.map(w=>({w,q:isQ(w),s:stem(w),ss:sv(w),tg:tri(w)})),res=[];const HW=qt.filter(x=>!x.q).map(x=>x.w),TH=4+HW.length*1.5;const synK=p=>p.split(' ').some(w=>qt.some(x=>x.s===stem(w)||tokEq(w,x.w)))?'s1':'s2';
+const cg=concepts(q,syn),PQ=polyQ(Array.isArray(f.poly)?f.poly:POLY,words,TQ);
+const qt=words.map(w=>({w,q:isQ(w),s:stem(w),ss:sv(w),tg:tri(w)})),res=[];const HW=qt.filter(x=>!x.q).map(x=>x.w),TH=4+HW.length*1.5;const synK=p=>p.split(' ').every(w=>qt.some(x=>x.s===stem(w)||tokEq(w,x.w)))?'s1':'s2';
 for(const it of items){
 if(f.doc&&it.docId!==f.doc)continue;if(f.kind&&it.kind!==f.kind)continue;if(exc.length&&exc.some(w=>w&&(it.n.includes(w)||sv(w).some(v=>it.t.has(v)))))continue;if(phr.length&&!phr.every(p=>it.n.includes(p)))continue;
 const tl=it.tl||(it.tl=it.n.split(/[\s\/\-]+/).filter(Boolean));
@@ -270,4 +275,4 @@ if(!(+b.price>0)&&b.qty!==''&&b.qty!=null)add('ללא מחיר','נושא לבי
 return{b,m,tm,flags:[...fl.values()]}}
 const GENH=new Set('חשמל עבודות מתקני מתקן כללי כללית אספקת התקנת הספקת מחירון תוספות מערכת במידה ויידרש בלבד'.split(' ').map(norm));
 const topicOf=ctx=>norm(String(ctx||'').replace(/^[\d.\s]+/,'').split(' - ')[0]).split(' ').filter(w=>w.length>2&&!GENH.has(w)&&!STOP.has(w)).map(stem);
-g.Core={POLY,setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,setSlash,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core,isGen,classTok,itemAttrs,ATT};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);
+g.Core={POLY,splitQ,searchMulti,setSynDel,setTrust,cleanSyn,mergeDef,concepts,sv,topicOf,norm,stem,toks,search,searchAdv,setSlash,inherit,mergeInh,expand,parseXlsx,prep,DEF_SYN,autoSyn,topTerms,related,highlight,compareOne,STOP,core,isGen,classTok,itemAttrs,ATT};if(typeof module!=='undefined')module.exports=g.Core})(typeof window!=='undefined'?window:globalThis);

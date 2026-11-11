@@ -85,6 +85,29 @@
       "q": "מנתק בעומס",
       "visMin": 10,
       "visTopHas": "מנתק"
+    },
+    {
+      "id": "btn-synonym",
+      "q": "לחצן הפסקה",
+      "visMin": 5,
+      "visHas": "לחצן ניתוק"
+    },
+    {
+      "id": "btn-multi",
+      "q": "לחצן ניתוק / לחצן הפסקה",
+      "visMin": 10
+    },
+    {
+      "id": "ct-synonym",
+      "q": "שנאי זרם",
+      "visMin": 10,
+      "visHas": "משני זרם"
+    },
+    {
+      "id": "fire-synonym",
+      "q": "חסין אש",
+      "visMin": 60,
+      "visHas": "עמידי אש"
     }
   ]
 }

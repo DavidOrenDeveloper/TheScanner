@@ -32,3 +32,25 @@ if(b.dataset.a==='smode'){P().sm=b.dataset.i;await save();Q.trim()?await doSearc
 document.addEventListener('change',async e=>{const t=e.target,a=t.dataset&&t.dataset.a;if(a!=='mkc'&&a!=='hlk'&&a!=='asyn'&&a!=='inh')return;keepQ();
 if(a==='mkc')P().mkc=t.value;else if(a==='hlk')P().hlk=t.value;else if(a==='inh'){P().inh=t.checked;ITEMS.forEach(Core.prep);Core.inherit(ITEMS,t.checked)}else P().asyn=t.checked;await save();(a==='asyn'||a==='inh')&&Q.trim()?await doSearch():render()});
 document.addEventListener('change',async e=>{const t=e.target,a=t.dataset&&t.dataset.a;if(a!=='fdset'&&a!=='fkset')return;keepQ();if(a==='fdset')FD=t.value;else FK=t.value;Q.trim()?await doSearch():render()});
+
+// ================= עורך מילון: נרדפים ומילים עם כמה משמעויות =================
+const setSynDel=a=>{P().synDel=[...new Set(a)];Core.setSynDel(P().synDel)};
+async function sgEdit(i){const isNew=i==='new',g=isNew?[]:S.syn[+i];
+const v=await modal(`<b>${isNew?'קבוצה חדשה של מילים שוות':'עריכת קבוצה'}</b><p class="src">כתוב מילים וביטויים שמשמעותם זהה, מופרדים בפסיק. חיפוש של כל אחת מהן ימצא גם את האחרות (בצבע סגול). לדוגמה: לחצן ניתוק, לחצן הפסקה, לחצן פטריה</p><textarea id="sge" style="min-height:100px">${esc(g.join(', '))}</textarea>`,()=>$('#sge').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean),'שמור');
+if(!v)return;if(v.length<2)return toast('צריך לפחות שתי מילים או ביטויים');
+const old=g.map(Core.norm),nw=v.map(Core.norm);
+await mut(()=>{const a=S.syn.map(x=>[...x]);if(isNew)a.push(v);else a[+i]=v;S.syn=a;setSynDel([...(P().synDel||[]).filter(x=>!nw.includes(x)),...old.filter(x=>!nw.includes(x))])})}
+async function sgDel(i){const g=S.syn[i];if(!g||!await confirmD('למחוק את הקבוצה?\n'+g.join(' = '),'מחק'))return;
+await mut(()=>{S.syn=S.syn.filter((_,k)=>k!==i);setSynDel([...(P().synDel||[]),...g.map(Core.norm)])})}
+async function plEdit(i){const isNew=i==='new',p=isNew?{terms:[],senses:[{id:'a',label:'',cues:[],def:1},{id:'b',label:'',cues:[]}]}:S.poly[+i],[a,b]=p.senses;
+const v=await modal(`<b>${isNew?'מילה חדשה עם כמה משמעויות':'עריכה'}</b><p class="src">כתוב את המילה (אפשר כמה צורות, מופרדות בפסיק), ולכל משמעות – שם, ומילים שמופיעות לידה ומזהות אותה (מספיק חלק מהמילה, למשל "חפיר" תתפוס חפירה וחפירת).</p>
+<label class="src">המילה</label><input id="plt" value="${esc(p.terms.join(', '))}" placeholder="תעלה, תעלות, תעלת">
+<label class="src">משמעות 1 – שם</label><input id="pl1n" value="${esc(a.label)}" placeholder="תעלת כבלים"><label class="src">מילים שמזהות אותה</label><input id="pl1c" value="${esc(a.cues.join(', '))}" placeholder="כבל, סולם, רשת, פח">
+<label class="src">משמעות 2 – שם</label><input id="pl2n" value="${esc(b.label)}" placeholder="תעלת חפירה"><label class="src">מילים שמזהות אותה</label><input id="pl2c" value="${esc(b.cues.join(', '))}" placeholder="חפירה, חציבה, קרקע">
+<div class="src">משמעות ברירת מחדל (כשלא כתוב בחיפוש מה הכוונה):</div><label class="chk"><input type="radio" name="pld" value="1"${a.def||!b.def?' checked':''}> משמעות 1</label><label class="chk"><input type="radio" name="pld" value="2"${b.def?' checked':''}> משמעות 2</label>`,
+()=>{const L=id=>$(id).value.split(',').map(x=>x.trim()).filter(Boolean);return{terms:L('#plt'),l1:$('#pl1n').value.trim(),c1:L('#pl1c'),l2:$('#pl2n').value.trim(),c2:L('#pl2c'),d:document.querySelector('[name=pld]:checked').value}},'שמור');
+if(!v)return;if(!v.terms.length||!v.l1||!v.l2||!v.c1.length||!v.c2.length)return toast('צריך למלא את המילה, ושם ומילים מזהות לשתי המשמעויות');
+const e={id:p.id||('u'+Date.now()),terms:v.terms,senses:[{id:'a',label:v.l1,cues:v.c1,...(v.d==='1'?{def:1}:{})},{id:'b',label:v.l2,cues:v.c2,...(v.d==='2'?{def:1}:{})}]};
+await mut(()=>{const l=[...(S.poly||[])];if(isNew)l.push(e);else l[+i]=e;S.poly=l})}
+async function plDel(i){const p=S.poly[i];if(!p||!await confirmD('למחוק את "'+p.terms.join(' / ')+'" מרשימת המילים עם כמה משמעויות?','מחק'))return;await mut(()=>S.poly=S.poly.filter((_,k)=>k!==i))}
+async function plReset(){if(await confirmD('לשחזר את הרשימה של ברירת המחדל? שינויים שלך ברשימה הזו יימחקו.','שחזר'))await mut(()=>S.poly=JSON.parse(JSON.stringify(Core.POLY)))}
